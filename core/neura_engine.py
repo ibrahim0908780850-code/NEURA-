@@ -1,60 +1,79 @@
 """
 NEURA-1 Core Engine
 
-Main intelligence layer for NEURA cloud system.
+Connects NEURA intelligence with the Qwen model
+and inference system.
 """
 
 from datetime import datetime
 
+from core.model_loader import ModelLoader
+from core.inference import InferenceEngine
+
 
 class NEURAEngine:
     """
-    Core engine responsible for handling
-    NEURA-1 requests and responses.
+    Main AI engine for NEURA-1.
     """
 
-    def __init__(self, model_name="Qwen"):
+    def __init__(self):
         self.name = "NEURA-1"
-        self.base_model = model_name
-        self.version = "0.1.0"
+        self.version = "0.3.0"
+
+        self.model_loader = ModelLoader()
+
+        self.model = None
+        self.inference = None
+
         self.created = datetime.utcnow()
 
-    def get_status(self):
+    def load_model(self):
+        """
+        Load Qwen model and initialize inference.
+        """
+
+        self.model = self.model_loader.load()
+
+        self.inference = InferenceEngine(
+            model=self.model,
+            tokenizer=self.model_loader.tokenizer
+        )
+
         return {
-            "name": self.name,
-            "version": self.version,
-            "base_model": self.base_model,
-            "status": "ready"
+            "status": "model loaded",
+            "model": self.model_loader.model_name
         }
 
     def process_message(self, message, user_id=None):
         """
-        Process user input.
-
-        Future:
-        - Connect Qwen model
-        - Add memory system
-        - Add tools
+        Process user message and generate response.
         """
 
-        response = {
+        if self.inference is None:
+            return {
+                "response": "NEURA-1 model is not loaded yet.",
+                "user_id": user_id,
+                "status": "waiting"
+            }
+
+        response = self.inference.generate(
+            message
+        )
+
+        return {
+            "response": response,
             "user_id": user_id,
-            "input": message,
-            "response": "NEURA-1 is processing your request.",
             "timestamp": datetime.utcnow().isoformat()
         }
 
-        return response
+    def get_status(self):
+        """
+        Return system status.
+        """
 
-
-if __name__ == "__main__":
-    neura = NEURAEngine()
-
-    print(neura.get_status())
-
-    result = neura.process_message(
-        "مرحبا نيرا",
-        user_id="demo-user"
-    )
-
-    print(result)
+        return {
+            "name": self.name,
+            "version": self.version,
+            "model_loaded": self.model is not None,
+            "inference_ready": self.inference is not None
+        }
