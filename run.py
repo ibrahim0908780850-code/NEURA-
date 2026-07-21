@@ -4,7 +4,7 @@ NEURA-1 Main Startup
 Starts and initializes the NEURA-1 system.
 """
 
-from config import Config
+from core.config import Config
 from api.server import app, neura
 
 
