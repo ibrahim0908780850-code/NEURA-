@@ -1,63 +1,87 @@
 """
-NEURA-1 Core Engine
+NEURA-1 Central Core
 
-Connects NEURA intelligence with the Qwen model.
+Integrates:
+- AI Engine
+- Memory System
+- Personality Layer
+- Tools System
 """
 
-from datetime import datetime
+from core.neura_engine import NEURAEngine
+from core.memory import MemorySystem
+from core.personality import NEURAPersonality
+from core.tools import ToolsSystem
 
-from core.model_loader import ModelLoader
 
-
-class NEURAEngine:
+class NEURACore:
     """
-    Main AI engine for NEURA-1.
+    Main controller for NEURA-1.
     """
 
     def __init__(self):
-        self.name = "NEURA-1"
-        self.version = "0.2.0"
-        self.model_loader = ModelLoader()
-        self.model = None
-        self.created = datetime.utcnow()
+        self.engine = NEURAEngine()
+        self.memory = MemorySystem()
+        self.personality = NEURAPersonality()
+        self.tools = ToolsSystem()
 
-    def load_model(self):
+    def detect_tool(self, message):
         """
-        Load Qwen model.
+        Simple tool detection.
         """
 
-        self.model = self.model_loader.load()
+        if "احسب" in message or "calculate" in message:
+            return "calculator"
+
+        return None
+
+    def chat(self, user_id, message):
+        """
+        Process user message through NEURA system.
+        """
+
+        self.memory.save_memory(
+            user_id,
+            message
+        )
+
+        tool_result = None
+
+        tool = self.detect_tool(message)
+
+        if tool == "calculator":
+            expression = (
+                message
+                .replace("احسب", "")
+                .strip()
+            )
+
+            tool_result = self.tools.run_tool(
+                "calculator",
+                expression
+            )
+
+        response = self.engine.process_message(
+            message,
+            user_id
+        )
 
         return {
-            "status": "model loaded",
-            "model": self.model_loader.model_name
+            "personality": self.personality.get_profile(),
+            "response": response,
+            "tool_result": tool_result,
+            "available_tools": self.tools.available_tools(),
+            "memory": self.memory.get_memories(user_id)
         }
 
-    def process_message(self, message, user_id=None):
-        """
-        Generate response.
 
-        Future:
-        - Connect Qwen inference
-        - Add memory context
-        - Add tools
-        """
+if __name__ == "__main__":
 
-        if self.model is None:
-            return {
-                "response": "NEURA-1 is ready. Model loading required.",
-                "user_id": user_id
-            }
+    neura = NEURACore()
 
-        return {
-            "response": "NEURA-1 processed your request.",
-            "user_id": user_id,
-            "timestamp": datetime.utcnow().isoformat()
-        }
+    result = neura.chat(
+        "demo-user",
+        "مرحبا نيرا"
+    )
 
-    def get_status(self):
-        return {
-            "name": self.name,
-            "version": self.version,
-            "model_loaded": self.model is not None
-        }
+    print(result)
