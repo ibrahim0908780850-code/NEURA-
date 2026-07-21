@@ -1,7 +1,5 @@
 """
-NEURA-1 Inference API
-
-Connects NEURA-1 with external AI model providers.
+NEURA-1 Hugging Face Inference Provider
 """
 
 import os
@@ -9,38 +7,47 @@ import requests
 
 
 class InferenceAPI:
-    """
-    Handles communication with AI inference endpoint.
-    """
 
     def __init__(self):
 
-        self.url = os.getenv(
-            "MODEL_API_URL"
+        self.url = (
+            "https://router.huggingface.co/v1/chat/completions"
         )
 
         self.token = os.getenv(
             "HF_TOKEN"
         )
 
+        self.model = (
+            "Qwen/Qwen2.5-7B-Instruct"
+        )
+
 
     def generate(self, prompt):
-        """
-        Send prompt to AI model and return response.
-        """
 
-        if not self.url:
+        if not self.token:
             return {
-                "error": "MODEL_API_URL is not configured"
+                "error": "HF_TOKEN missing"
             }
 
 
-        headers = {}
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
 
-        if self.token:
-            headers["Authorization"] = (
-                f"Bearer {self.token}"
-            )
+
+        data = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "max_tokens": 256,
+            "temperature": 0.7
+        }
 
 
         try:
@@ -48,13 +55,7 @@ class InferenceAPI:
             response = requests.post(
                 self.url,
                 headers=headers,
-                json={
-                    "inputs": prompt,
-                    "parameters": {
-                        "max_new_tokens": 256,
-                        "temperature": 0.7
-                    }
-                },
+                json=data,
                 timeout=60
             )
 
@@ -62,19 +63,16 @@ class InferenceAPI:
             result = response.json()
 
 
-            if isinstance(result, list):
-
-                return result[0].get(
-                    "generated_text",
-                    ""
-                )
-
-
-            return result
+            return (
+                result
+                .get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", str(result))
+            )
 
 
-        except Exception as error:
+        except Exception as e:
 
             return {
-                "error": str(error)
+                "error": str(e)
             }
