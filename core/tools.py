@@ -5,6 +5,10 @@ Provides external capabilities and actions
 for the NEURA-1 assistant.
 """
 
+import ast
+import operator
+from datetime import datetime
+
 
 class ToolsSystem:
     """
@@ -12,21 +16,27 @@ class ToolsSystem:
     """
 
     def __init__(self):
+
         self.tools = {
             "calculator": self.calculator,
-            "text_info": self.text_info
+            "text_info": self.text_info,
+            "system_info": self.system_info
         }
+
 
     def available_tools(self):
         """
         Return available tools.
         """
 
-        return list(self.tools.keys())
+        return list(
+            self.tools.keys()
+        )
+
 
     def run_tool(self, tool_name, data):
         """
-        Execute a selected tool.
+        Execute selected tool.
         """
 
         if tool_name not in self.tools:
@@ -36,31 +46,86 @@ class ToolsSystem:
 
         return self.tools[tool_name](data)
 
+
     def calculator(self, expression):
         """
-        Basic calculator tool.
+        Safe basic calculator.
         """
 
         try:
-            result = eval(expression)
 
-            return {
-                "result": result
+            allowed = {
+                ast.Add: operator.add,
+                ast.Sub: operator.sub,
+                ast.Mult: operator.mul,
+                ast.Div: operator.truediv
             }
 
+            tree = ast.parse(
+                expression,
+                mode="eval"
+            )
+
+
+            def evaluate(node):
+
+                if isinstance(
+                    node,
+                    ast.Constant
+                ):
+                    return node.value
+
+                if isinstance(
+                    node,
+                    ast.BinOp
+                ):
+
+                    return allowed[
+                        type(node.op)
+                    ](
+                        evaluate(node.left),
+                        evaluate(node.right)
+                    )
+
+                raise ValueError(
+                    "Unsupported operation"
+                )
+
+
+            return {
+                "result": evaluate(
+                    tree.body
+                )
+            }
+
+
         except Exception:
+
             return {
                 "error": "Invalid expression"
             }
 
+
     def text_info(self, text):
         """
-        Basic text analysis tool.
+        Analyze text.
         """
 
         return {
-            "length": len(text),
+            "characters": len(text),
             "words": len(text.split())
+        }
+
+
+    def system_info(self, _):
+        """
+        Return NEURA system information.
+        """
+
+        return {
+            "system": "NEURA-1",
+            "time": datetime.utcnow().isoformat(),
+            "status": "online"
         }
 
 
