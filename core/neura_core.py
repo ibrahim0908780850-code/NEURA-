@@ -4,13 +4,17 @@ NEURA-1 Central Core
 Integrates:
 - AI Engine
 - Memory System
+- Conversation Manager
 - Personality Layer
+- Knowledge System
 - Tools System
 """
 
 from core.neura_engine import NEURAEngine
 from core.memory import MemorySystem
+from core.conversation import ConversationManager
 from core.personality import NEURAPersonality
+from core.knowledge import KnowledgeBase
 from core.tools import ToolsSystem
 
 
@@ -21,13 +25,17 @@ class NEURACore:
 
     def __init__(self):
         self.engine = NEURAEngine()
+
         self.memory = MemorySystem()
+        self.conversation = ConversationManager()
+
         self.personality = NEURAPersonality()
+        self.knowledge = KnowledgeBase()
         self.tools = ToolsSystem()
 
     def detect_tool(self, message):
         """
-        Simple tool detection.
+        Detect if user needs a tool.
         """
 
         if "احسب" in message or "calculate" in message:
@@ -40,9 +48,22 @@ class NEURACore:
         Process user message through NEURA system.
         """
 
+        # Save conversation
+        self.conversation.add_message(
+            user_id,
+            "user",
+            message
+        )
+
+        # Save memory
         self.memory.save_memory(
             user_id,
             message
+        )
+
+        # Get conversation history
+        history = self.conversation.get_history(
+            user_id
         )
 
         tool_result = None
@@ -50,6 +71,7 @@ class NEURACore:
         tool = self.detect_tool(message)
 
         if tool == "calculator":
+
             expression = (
                 message
                 .replace("احسب", "")
@@ -61,15 +83,24 @@ class NEURACore:
                 expression
             )
 
+        # Generate AI response
         response = self.engine.process_message(
             message,
             user_id
+        )
+
+        # Save assistant response
+        self.conversation.add_message(
+            user_id,
+            "assistant",
+            str(response)
         )
 
         return {
             "personality": self.personality.get_profile(),
             "response": response,
             "tool_result": tool_result,
+            "conversation": history,
             "available_tools": self.tools.available_tools(),
             "memory": self.memory.get_memories(user_id)
         }
