@@ -1,0 +1,21 @@
+{
+  "model_name": "NEURA-1",
+  "base_model": "Qwen",
+  "version": "0.1.0",
+  "language": [
+    "ar",
+    "en"
+  ],
+  "deployment": {
+    "type": "cloud",
+    "provider": "TBD",
+    "gpu_required": true
+  },
+  "features": {
+    "chat": true,
+    "memory": true,
+    "knowledge_base": true,
+    "tools": true
+  },
+  "organization": "Neural AI Organization"
+}
