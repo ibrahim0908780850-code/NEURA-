@@ -2,8 +2,7 @@
 NEURA-1 Core Engine
 
 Connects NEURA intelligence with:
-- Qwen model
-- Inference system
+- External AI inference
 - Memory system
 - Knowledge base
 - Tools system
@@ -13,7 +12,6 @@ from datetime import datetime
 
 from core.config import Config
 from core.model_loader import ModelLoader
-from core.inference import InferenceEngine
 from core.memory import MemorySystem
 from core.knowledge import KnowledgeBase
 from core.tools import ToolsSystem
@@ -51,18 +49,15 @@ class NEURAEngine:
 
     def load_model(self):
         """
-        Load Qwen model and initialize inference.
+        Connect to external model inference.
         """
 
         self.model = self.model_loader.load()
 
-        self.inference = InferenceEngine(
-            model=self.model,
-            tokenizer=self.model_loader.tokenizer
-        )
+        self.inference = self.model_loader.inference
 
         return {
-            "status": "model loaded",
+            "status": "model connected",
             "model": self.model_loader.model_name
         }
 
@@ -100,7 +95,6 @@ class NEURAEngine:
 
         prompt = message
 
-
         if context:
 
             prompt = f"""
@@ -114,15 +108,11 @@ User:
 
         if self.inference is None:
 
-            return {
-                "response": "NEURA-1 model is not loaded yet.",
-                "status": "waiting"
-            }
+            self.load_model()
 
 
         response = self.inference.generate(
-            prompt,
-            history=history
+            prompt
         )
 
 
@@ -134,9 +124,6 @@ User:
 
 
     def get_status(self):
-        """
-        Return system status.
-        """
 
         return {
             "name": self.name,
