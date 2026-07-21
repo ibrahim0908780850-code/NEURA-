@@ -7,11 +7,14 @@ and NEURA core.
 
 from flask import Flask, request, jsonify
 
+from core.config import Config
 from core.neura_core import NEURACore
 from core.auth import AuthSystem
 
 
 app = Flask(__name__)
+
+config = Config()
 
 neura = NEURACore()
 auth = AuthSystem()
@@ -19,10 +22,11 @@ auth = AuthSystem()
 
 @app.route("/", methods=["GET"])
 def home():
+
     return jsonify({
-        "name": "NEURA-1",
+        "name": config.app_name,
         "status": "online",
-        "version": "0.5.0",
+        "version": config.version,
         "description": "Arabic-first cloud AI system"
     })
 
@@ -41,12 +45,17 @@ def create_user():
     data = request.json or {}
 
     user_id = data.get("user_id")
-    name = data.get("name", "User")
+    name = data.get(
+        "name",
+        "User"
+    )
 
     if not user_id:
+
         return jsonify({
             "error": "user_id required"
         }), 400
+
 
     user = auth.create_user(
         user_id,
@@ -56,54 +65,79 @@ def create_user():
     return jsonify(user)
 
 
+
 @app.route("/api/chat", methods=["POST"])
 def chat():
 
-    data = request.json or {}
+    try:
 
-    api_key = data.get("api_key")
+        data = request.json or {}
 
-    if api_key:
-
-        check = auth.authenticate(
-            api_key
+        api_key = data.get(
+            "api_key"
         )
 
-        if not check["authenticated"]:
+
+        if api_key:
+
+            check = auth.authenticate(
+                api_key
+            )
+
+            if not check["authenticated"]:
+
+                return jsonify({
+                    "error": "Invalid API key"
+                }), 401
+
+
+            user_id = check["user_id"]
+
+        else:
+
+            user_id = data.get(
+                "user_id",
+                "guest"
+            )
+
+
+        message = data.get(
+            "message",
+            ""
+        )
+
+
+        if not message:
+
             return jsonify({
-                "error": "Invalid API key"
-            }), 401
+                "error": "message required"
+            }), 400
 
-        user_id = check["user_id"]
 
-    else:
-        user_id = data.get(
-            "user_id",
-            "guest"
+
+        response = neura.chat(
+            user_id,
+            message
         )
 
-    message = data.get(
-        "message",
-        ""
-    )
 
-    if not message:
+        return jsonify(
+            response
+        )
+
+
+    except Exception as error:
+
         return jsonify({
-            "error": "message required"
-        }), 400
+            "error": str(error)
+        }), 500
 
-    response = neura.chat(
-        user_id,
-        message
-    )
-
-    return jsonify(response)
 
 
 if __name__ == "__main__":
 
     app.run(
-        host="0.0.0.0",
-        port=8000,
+        host=config.host,
+        port=config.port,
         debug=False
     )
