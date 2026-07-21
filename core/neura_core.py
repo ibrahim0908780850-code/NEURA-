@@ -1,56 +1,63 @@
 """
-NEURA-1 Central Core
+NEURA-1 Core Engine
 
-Integrates:
-- AI Engine
-- Memory System
-- Personality Layer
+Connects NEURA intelligence with the Qwen model.
 """
 
-from core.neura_engine import NEURAEngine
-from core.memory import MemorySystem
-from core.personality import NEURAPersonality
+from datetime import datetime
+
+from core.model_loader import ModelLoader
 
 
-class NEURACore:
+class NEURAEngine:
     """
-    Main controller for NEURA-1.
+    Main AI engine for NEURA-1.
     """
 
     def __init__(self):
-        self.engine = NEURAEngine()
-        self.memory = MemorySystem()
-        self.personality = NEURAPersonality()
+        self.name = "NEURA-1"
+        self.version = "0.2.0"
+        self.model_loader = ModelLoader()
+        self.model = None
+        self.created = datetime.utcnow()
 
-    def chat(self, user_id, message):
+    def load_model(self):
         """
-        Process user message through NEURA system.
+        Load Qwen model.
         """
 
-        self.memory.save_memory(
-            user_id,
-            message
-        )
-
-        response = self.engine.process_message(
-            message,
-            user_id
-        )
+        self.model = self.model_loader.load()
 
         return {
-            "personality": self.personality.get_profile(),
-            "response": response,
-            "memory": self.memory.get_memories(user_id)
+            "status": "model loaded",
+            "model": self.model_loader.model_name
         }
 
+    def process_message(self, message, user_id=None):
+        """
+        Generate response.
 
-if __name__ == "__main__":
+        Future:
+        - Connect Qwen inference
+        - Add memory context
+        - Add tools
+        """
 
-    neura = NEURACore()
+        if self.model is None:
+            return {
+                "response": "NEURA-1 is ready. Model loading required.",
+                "user_id": user_id
+            }
 
-    result = neura.chat(
-        "demo-user",
-        "مرحبا نيرا"
-    )
+        return {
+            "response": "NEURA-1 processed your request.",
+            "user_id": user_id,
+            "timestamp": datetime.utcnow().isoformat()
+        }
 
-    print(result)
+    def get_status(self):
+        return {
+            "name": self.name,
+            "version": self.version,
+            "model_loaded": self.model is not None
+        }
