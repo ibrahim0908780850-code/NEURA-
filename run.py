@@ -1,17 +1,14 @@
 """
 NEURA-1 Main Startup
 
-Starts and initializes the NEURA-1 cloud system.
+Starts and initializes the NEURA-1 system.
 """
 
-import os
-
-from dotenv import load_dotenv
-
+from core.config import Config
 from api.server import app, neura
 
 
-load_dotenv()
+config = Config()
 
 
 def initialize_neura():
@@ -21,7 +18,9 @@ def initialize_neura():
 
     print("🧠 Initializing NEURA-1...")
 
+
     status = neura.engine.get_status()
+
 
     print(
         f"✅ Engine: {status['name']}"
@@ -29,6 +28,10 @@ def initialize_neura():
 
     print(
         f"📌 Version: {status['version']}"
+    )
+
+    print(
+        f"🤖 Model: {status['model']}"
     )
 
     print(
@@ -44,41 +47,35 @@ def initialize_neura():
     )
 
 
+
 def main():
     """
     Start NEURA-1 API server.
     """
 
-    host = os.getenv(
-        "HOST",
-        "0.0.0.0"
-    )
-
-    port = int(
-        os.getenv(
-            "PORT",
-            8000
-        )
-    )
 
     print("""
 ================================
         NEURA-1 AI SYSTEM
 ================================
-    """)
+""")
+
 
     initialize_neura()
 
+
     print(
-        f"🌐 Server running on {host}:{port}"
+        f"🌐 Server running on {config.host}:{config.port}"
     )
 
+
     app.run(
-        host=host,
-        port=port,
+        host=config.host,
+        port=config.port,
         debug=False
     )
 
 
 if __name__ == "__main__":
+
     main()
