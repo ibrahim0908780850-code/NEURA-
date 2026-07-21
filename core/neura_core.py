@@ -5,7 +5,8 @@ Integrates:
 - AI Engine
 - Conversation Manager
 - Personality Layer
-- Authentication Ready
+- Tools System
+- Memory Ready
 """
 
 from core.neura_engine import NEURAEngine
@@ -50,6 +51,7 @@ class NEURACore:
         """
 
 
+        # Save user message
         self.conversation.add_message(
             user_id,
             "user",
@@ -75,8 +77,10 @@ class NEURACore:
             expression = (
                 message
                 .replace("احسب", "")
+                .replace("calculate", "")
                 .strip()
             )
+
 
             tool_result = self.tools.run_tool(
                 "calculator",
@@ -84,6 +88,7 @@ class NEURACore:
             )
 
 
+        # Generate AI response
         response = self.engine.process_message(
             message,
             user_id,
@@ -91,10 +96,24 @@ class NEURACore:
         )
 
 
+        # Extract clean assistant text
+        if isinstance(response, dict):
+
+            assistant_text = response.get(
+                "response",
+                str(response)
+            )
+
+        else:
+
+            assistant_text = str(response)
+
+
+        # Save only the answer
         self.conversation.add_message(
             user_id,
             "assistant",
-            str(response)
+            assistant_text
         )
 
 
@@ -111,6 +130,7 @@ class NEURACore:
 
             "tools": self.tools.available_tools()
         }
+
 
 
 if __name__ == "__main__":
