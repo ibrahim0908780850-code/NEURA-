@@ -1,8 +1,13 @@
 ---
 license: apache-2.0
+language:
+- ar
+- en
+base_model:
+- Qwen
 tags:
 - neura
-- LLm
-- arabic_ai
-- conversational_ai
+- llm
+- arabic-ai
+- conversational-ai
 ---
