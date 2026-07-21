@@ -1,18 +1,18 @@
 """
 NEURA-1 Model Loader
 
-Responsible for loading and managing
-the base AI model.
+Connects NEURA-1 with external AI inference providers.
 """
 
-from transformers import AutoTokenizer, AutoModelForCausalLM
+import os
 
 from core.config import Config
+from core.inference_api import InferenceAPI
 
 
 class ModelLoader:
     """
-    Loads the foundation model for NEURA-1.
+    Loads and manages the AI model connection.
     """
 
     def __init__(self, model_name=None):
@@ -24,28 +24,34 @@ class ModelLoader:
             or self.config.model_name
         )
 
-        self.tokenizer = None
         self.model = None
+
+        self.inference = InferenceAPI()
 
 
     def load(self):
         """
-        Load tokenizer and model.
+        Initialize external inference connection.
         """
 
         print(
-            f"Loading model: {self.model_name}"
+            f"Connecting model: {self.model_name}"
         )
 
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            self.model_name
-        )
-
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.model_name
-        )
+        self.model = self.inference
 
         return self.model
+
+
+    def generate(self, prompt):
+        """
+        Generate AI response.
+        """
+
+        if self.model is None:
+            self.load()
+
+        return self.model.generate(prompt)
 
 
     def get_status(self):
@@ -55,7 +61,8 @@ class ModelLoader:
 
         return {
             "model": self.model_name,
-            "loaded": self.model is not None
+            "loaded": self.model is not None,
+            "provider": "Hugging Face Inference API"
         }
 
 
