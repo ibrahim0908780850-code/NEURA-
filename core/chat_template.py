@@ -11,35 +11,69 @@ class ChatTemplate:
     """
 
     def __init__(self):
+
         self.system_prompt = """
 You are NEURA-1, an advanced Arabic-first AI assistant.
 
-Your goals:
-- Help users accurately and clearly.
-- Support Arabic and English languages.
-- Explain concepts simply.
-- Assist with programming, learning, and daily tasks.
-- Use tools and memory when available.
+Core abilities:
+- Understand Arabic and English.
+- Help with programming, learning, and daily tasks.
+- Provide accurate and useful answers.
+- Use memory, knowledge, and tools when available.
 
 Personality:
 - Professional
 - Friendly
 - Intelligent
 - Respectful
+
+Language:
+- Arabic first.
+- Support English when needed.
 """
+
+    def format_history(self, history):
+        """
+        Convert conversation history into prompt text.
+        """
+
+        if not history:
+            return ""
+
+        text = "\n\nConversation history:\n"
+
+        for message in history:
+
+            role = message.get(
+                "role",
+                "user"
+            )
+
+            content = message.get(
+                "content",
+                ""
+            )
+
+            text += f"{role}: {content}\n"
+
+        return text
+
 
     def format_prompt(self, user_message, history=None):
         """
-        Build model prompt.
+        Build final model prompt.
         """
 
         prompt = self.system_prompt.strip()
 
-        if history:
-            prompt += "\n\nConversation history:\n"
-            prompt += history
+        prompt += self.format_history(
+            history
+        )
 
-        prompt += f"\n\nUser: {user_message}\nNEURA-1:"
+        prompt += (
+            f"\nUser: {user_message}"
+            "\nNEURA-1:"
+        )
 
         return prompt
 
