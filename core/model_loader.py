@@ -21,7 +21,10 @@ class ModelLoader:
 
         self.model_name = (
             model_name
-            or self.config.model_name
+            or os.getenv(
+                "MODEL_NAME",
+                "Qwen/Qwen3.5-9B"
+            )
         )
 
         self.model = None
@@ -35,7 +38,7 @@ class ModelLoader:
         """
 
         print(
-            f"Connecting model: {self.model_name}"
+            f"🤖 Connecting NEURA model: {self.model_name}"
         )
 
         self.model = self.inference
