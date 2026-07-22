@@ -2,10 +2,11 @@
 NEURA-1 Memory System
 
 Handles short-term and long-term memory
-for users and conversations.
+using Supabase persistent storage.
 """
 
 from datetime import datetime
+from core.database import db
 
 
 class MemorySystem:
@@ -13,9 +14,9 @@ class MemorySystem:
     Memory layer for NEURA-1.
     """
 
-    def __init__(self):
 
-        self.memories = []
+    def __init__(self):
+        self.table = "memories"
 
 
     def save_memory(
@@ -26,34 +27,47 @@ class MemorySystem:
         importance="normal"
     ):
         """
-        Store user memory.
+        Store user memory in Supabase.
         """
 
         memory = {
             "user_id": user_id,
-            "content": content,
+            "memory": content,
             "type": memory_type,
             "importance": importance,
             "created_at": datetime.utcnow().isoformat()
         }
 
-        self.memories.append(
-            memory
+
+        result = (
+            db.client
+            .table(self.table)
+            .insert(memory)
+            .execute()
         )
 
-        return memory
+
+        return result.data[0] if result.data else memory
+
 
 
     def get_memories(self, user_id):
         """
-        Retrieve memories for user.
+        Retrieve user memories.
         """
 
-        return [
-            memory
-            for memory in self.memories
-            if memory["user_id"] == user_id
-        ]
+        result = (
+            db.client
+            .table(self.table)
+            .select("*")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+
+        return result.data
+
 
 
     def search_memory(self, user_id, query):
@@ -61,13 +75,21 @@ class MemorySystem:
         Search user memories.
         """
 
-        query = query.lower()
+        result = (
+            db.client
+            .table(self.table)
+            .select("*")
+            .eq("user_id", user_id)
+            .ilike(
+                "memory",
+                f"%{query}%"
+            )
+            .execute()
+        )
 
-        return [
-            memory
-            for memory in self.get_memories(user_id)
-            if query in memory["content"].lower()
-        ]
+
+        return result.data
+
 
 
     def clear_memory(self, user_id):
@@ -75,11 +97,17 @@ class MemorySystem:
         Delete user memories.
         """
 
-        self.memories = [
-            memory
-            for memory in self.memories
-            if memory["user_id"] != user_id
-        ]
+        result = (
+            db.client
+            .table(self.table)
+            .delete()
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+
+        return result.data
+
 
 
 if __name__ == "__main__":
@@ -92,6 +120,7 @@ if __name__ == "__main__":
         "long_term",
         "high"
     )
+
 
     print(
         memory.get_memories(
