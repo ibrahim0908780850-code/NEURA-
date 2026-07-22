@@ -9,3 +9,5 @@ sentencepiece==0.2.0
 torch
 safetensors
 huggingface-hub
+
+supabase
