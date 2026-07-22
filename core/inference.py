@@ -1,26 +1,30 @@
 """
 NEURA-1 Inference Engine
 
-Handles text generation using the loaded Qwen model
-with NEURA-1 chat template.
+Uses Hugging Face Inference Providers API.
 """
 
-import torch
-
-from core.chat_template import ChatTemplate
+import os
+from huggingface_hub import InferenceClient
 
 
 class InferenceEngine:
-    """
-    Generates responses from NEURA-1 model.
-    """
 
     def __init__(self, model=None, tokenizer=None):
 
-        self.model = model
-        self.tokenizer = tokenizer
+        self.model_name = (
+            model
+            or os.getenv(
+                "MODEL_NAME",
+                "meta-llama/Llama-3.1-8B-Instruct"
+            )
+        )
 
-        self.chat_template = ChatTemplate()
+        self.client = InferenceClient(
+            api_key=os.getenv(
+                "HF_TOKEN"
+            )
+        )
 
 
     def generate(
@@ -29,65 +33,51 @@ class InferenceEngine:
         history=None,
         max_tokens=256
     ):
-        """
-        Generate AI response.
-        """
 
-        if self.model is None or self.tokenizer is None:
-            return "NEURA-1 model is not loaded yet."
+        messages = []
 
 
-        prompt = self.chat_template.format_prompt(
-            user_message,
-            history
-        )
+        if history:
+
+            for item in history:
+
+                messages.append({
+                    "role": item["role"],
+                    "content": item["content"]
+                })
 
 
-        inputs = self.tokenizer(
-            prompt,
-            return_tensors="pt"
-        )
+        messages.append({
+            "role": "user",
+            "content": user_message
+        })
 
 
-        if torch.cuda.is_available():
-            inputs = {
-                key: value.to("cuda")
-                for key, value in inputs.items()
-            }
+        try:
 
+            response = self.client.chat.completions.create(
 
-        outputs = self.model.generate(
-            **inputs,
-            max_new_tokens=max_tokens,
-            do_sample=True,
-            temperature=0.7,
-            top_p=0.9,
-            repetition_penalty=1.1
-        )
+                model=self.model_name,
 
+                messages=messages,
 
-        response = self.tokenizer.decode(
-            outputs[0],
-            skip_special_tokens=True
-        )
+                max_tokens=max_tokens,
 
+                temperature=0.7
 
-        if prompt in response:
-            response = response.replace(
-                prompt,
-                ""
             )
 
 
-        return response.strip()
+            return (
+                response
+                .choices[0]
+                .message
+                .content
+            )
 
 
-if __name__ == "__main__":
+        except Exception as e:
 
-    engine = InferenceEngine()
-
-    print(
-        engine.generate(
-            "مرحبا نيرا"
-        )
-    )
+            return {
+                "error": str(e)
+            }
