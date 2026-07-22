@@ -1,7 +1,7 @@
 """
 NEURA-1 Tools System
 
-Provides external capabilities and actions
+Manages external capabilities and actions
 for the NEURA-1 assistant.
 """
 
@@ -10,12 +10,19 @@ import operator
 import os
 import platform
 import datetime
-import os.path
+
+
+from core.web_search import WebSearch
+
 
 
 class ToolsSystem:
 
+
     def __init__(self):
+
+        self.web = WebSearch()
+
 
         self.tools = {
 
@@ -33,7 +40,9 @@ class ToolsSystem:
 
             "knowledge_search": self.knowledge_search,
 
-            "translate": self.translate
+            "translate": self.translate,
+
+            "web_search": self.web_search
 
         }
 
@@ -47,7 +56,11 @@ class ToolsSystem:
 
 
 
-    def run_tool(self, tool_name, data):
+    def run_tool(
+        self,
+        tool_name,
+        data
+    ):
 
         if tool_name not in self.tools:
 
@@ -61,10 +74,28 @@ class ToolsSystem:
 
 
     # =====================
+    # Web Search
+    # =====================
+
+    def web_search(
+        self,
+        query
+    ):
+
+        return self.web.search(
+            query
+        )
+
+
+
+    # =====================
     # Calculator
     # =====================
 
-    def calculator(self, expression):
+    def calculator(
+        self,
+        expression
+    ):
 
         try:
 
@@ -91,12 +122,17 @@ class ToolsSystem:
 
             def evaluate(node):
 
-                if isinstance(node, ast.Constant):
-
+                if isinstance(
+                    node,
+                    ast.Constant
+                ):
                     return node.value
 
 
-                if isinstance(node, ast.BinOp):
+                if isinstance(
+                    node,
+                    ast.BinOp
+                ):
 
                     operation = allowed.get(
                         type(node.op)
@@ -113,8 +149,11 @@ class ToolsSystem:
                 raise ValueError()
 
 
+
             return {
-                "result": evaluate(tree.body)
+                "result": evaluate(
+                    tree.body
+                )
             }
 
 
@@ -130,23 +169,26 @@ class ToolsSystem:
     # Text Analysis
     # =====================
 
-    def text_info(self, text):
+    def text_info(
+        self,
+        text
+    ):
 
         return {
 
-            "characters": len(text),
+            "characters":
+                len(text),
 
-            "words": len(text.split()),
+            "words":
+                len(text.split()),
 
             "language":
 
                 "Arabic"
-
                 if any(
                     "\u0600" <= c <= "\u06FF"
                     for c in text
                 )
-
                 else "English"
 
         }
@@ -154,21 +196,27 @@ class ToolsSystem:
 
 
     # =====================
-    # System Information
+    # System Info
     # =====================
 
-    def system_info(self, _):
+    def system_info(
+        self,
+        _
+    ):
 
         return {
 
-            "system": "NEURA-1",
+            "system":
+                "NEURA-1",
 
-            "version": "0.5.0",
+            "version":
+                "0.5.0",
 
-            "model": os.getenv(
-                "MODEL_NAME",
-                "Qwen/Qwen3.5-9B"
-            ),
+            "model":
+                os.getenv(
+                    "MODEL_NAME",
+                    "Qwen/Qwen3.5-9B"
+                ),
 
             "platform":
                 platform.system(),
@@ -184,7 +232,10 @@ class ToolsSystem:
     # Time
     # =====================
 
-    def current_time(self, _):
+    def current_time(
+        self,
+        _
+    ):
 
         return {
 
@@ -200,10 +251,13 @@ class ToolsSystem:
 
 
     # =====================
-    # File Tool
+    # Files
     # =====================
 
-    def file_info(self, path):
+    def file_info(
+        self,
+        path
+    ):
 
         try:
 
@@ -214,10 +268,8 @@ class ToolsSystem:
 
                 "size":
                     os.path.getsize(path)
-
-                if os.path.exists(path)
-
-                else 0
+                    if os.path.exists(path)
+                    else 0
 
             }
 
@@ -231,10 +283,13 @@ class ToolsSystem:
 
 
     # =====================
-    # Memory Tool
+    # Memory
     # =====================
 
-    def memory_search(self, query):
+    def memory_search(
+        self,
+        query
+    ):
 
         return {
 
@@ -242,20 +297,20 @@ class ToolsSystem:
                 "memory_search",
 
             "query":
-                query,
-
-            "status":
-                "connect memory database"
+                query
 
         }
 
 
 
     # =====================
-    # Knowledge Base Tool
+    # Knowledge
     # =====================
 
-    def knowledge_search(self, query):
+    def knowledge_search(
+        self,
+        query
+    ):
 
         return {
 
@@ -263,20 +318,20 @@ class ToolsSystem:
                 "knowledge_search",
 
             "query":
-                query,
-
-            "status":
-                "connect knowledge base"
+                query
 
         }
 
 
 
     # =====================
-    # Translation Tool
+    # Translation
     # =====================
 
-    def translate(self, text):
+    def translate(
+        self,
+        text
+    ):
 
         return {
 
@@ -284,7 +339,7 @@ class ToolsSystem:
                 text,
 
             "status":
-                "translation API not connected yet"
+                "translation API pending"
 
         }
 
@@ -305,13 +360,5 @@ if __name__ == "__main__":
         tools.run_tool(
             "calculator",
             "10*5"
-        )
-    )
-
-
-    print(
-        tools.run_tool(
-            "system_info",
-            ""
         )
     )
