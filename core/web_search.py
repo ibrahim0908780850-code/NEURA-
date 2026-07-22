@@ -1,7 +1,7 @@
 """
 NEURA-1 Web Search Tool
 
-Allows NEURA to search the internet.
+Allows NEURA-1 to search the internet.
 """
 
 import os
@@ -21,7 +21,11 @@ class WebSearch:
         )
 
 
-    def search(self, query, limit=5):
+    def search(
+        self,
+        query,
+        limit=5
+    ):
 
         if not self.api_key:
 
@@ -36,9 +40,13 @@ class WebSearch:
 
             "query": query,
 
-            "search_depth": "basic",
+            "search_depth": "advanced",
 
-            "max_results": limit
+            "max_results": limit,
+
+            "include_answer": True,
+
+            "include_raw_content": False
 
         }
 
@@ -52,32 +60,41 @@ class WebSearch:
             )
 
 
+            response.raise_for_status()
+
             data = response.json()
 
 
-            results = []
+            return {
 
+                "answer":
+                    data.get(
+                        "answer",
+                        ""
+                    ),
 
-            for item in data.get(
-                "results",
-                []
-            ):
+                "results": [
 
-                results.append({
+                    {
+                        "title":
+                            item.get("title"),
 
-                    "title":
-                        item.get("title"),
+                        "url":
+                            item.get("url"),
 
-                    "url":
-                        item.get("url"),
+                        "content":
+                            item.get("content")
 
-                    "content":
-                        item.get("content")
+                    }
 
-                })
+                    for item in data.get(
+                        "results",
+                        []
+                    )
 
+                ]
 
-            return results
+            }
 
 
         except Exception as e:
@@ -87,13 +104,12 @@ class WebSearch:
             }
 
 
-
 if __name__ == "__main__":
 
-    search = WebSearch()
+    web = WebSearch()
 
     print(
-        search.search(
-            "latest AI news"
+        web.search(
+            "ما هو الذكاء الاصطناعي"
         )
     )
