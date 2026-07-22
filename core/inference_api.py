@@ -18,8 +18,9 @@ class InferenceAPI:
             "HF_TOKEN"
         )
 
-        self.model = (
-            "Qwen/Qwen2.5-7B-Instruct"
+        self.model = os.getenv(
+            "MODEL_NAME",
+            "Qwen/Qwen3.5-9B"
         )
 
 
@@ -63,12 +64,18 @@ class InferenceAPI:
             result = response.json()
 
 
-            return (
-                result
-                .get("choices", [{}])[0]
-                .get("message", {})
-                .get("content", str(result))
-            )
+            if "choices" in result:
+
+                return (
+                    result["choices"][0]
+                    ["message"]
+                    ["content"]
+                )
+
+
+            return {
+                "error": result
+            }
 
 
         except Exception as e:
