@@ -11,17 +11,17 @@ import os
 import platform
 import datetime
 
-
 from core.web_search import WebSearch
-
+from core.code_agent import CodeAgent
 
 
 class ToolsSystem:
 
-
     def __init__(self):
 
         self.web = WebSearch()
+
+        self.code = CodeAgent()
 
 
         self.tools = {
@@ -42,32 +42,27 @@ class ToolsSystem:
 
             "translate": self.translate,
 
-            "web_search": self.web_search
+            "web_search": self.run_web_search,
+
+            "code_analyze": self.code_analyze,
+
+            "code_fix": self.code_fix
 
         }
 
 
-
     def available_tools(self):
 
-        return list(
-            self.tools.keys()
-        )
+        return list(self.tools.keys())
 
 
-
-    def run_tool(
-        self,
-        tool_name,
-        data
-    ):
+    def run_tool(self, tool_name, data):
 
         if tool_name not in self.tools:
 
             return {
                 "error": "Tool not found"
             }
-
 
         return self.tools[tool_name](data)
 
@@ -77,14 +72,25 @@ class ToolsSystem:
     # Web Search
     # =====================
 
-    def web_search(
-        self,
-        query
-    ):
+    def run_web_search(self, query):
 
-        return self.web.search(
-            query
-        )
+        return self.web.search(query)
+
+
+
+    # =====================
+    # Code Agent
+    # =====================
+
+    def code_analyze(self, code):
+
+        return self.code.analyze(code)
+
+
+
+    def code_fix(self, code):
+
+        return self.code.fix(code)
 
 
 
@@ -92,23 +98,16 @@ class ToolsSystem:
     # Calculator
     # =====================
 
-    def calculator(
-        self,
-        expression
-    ):
+    def calculator(self, expression):
 
         try:
 
             allowed = {
 
                 ast.Add: operator.add,
-
                 ast.Sub: operator.sub,
-
                 ast.Mult: operator.mul,
-
                 ast.Div: operator.truediv,
-
                 ast.Pow: operator.pow
 
             }
@@ -122,17 +121,12 @@ class ToolsSystem:
 
             def evaluate(node):
 
-                if isinstance(
-                    node,
-                    ast.Constant
-                ):
+                if isinstance(node, ast.Constant):
+
                     return node.value
 
 
-                if isinstance(
-                    node,
-                    ast.BinOp
-                ):
+                if isinstance(node, ast.BinOp):
 
                     operation = allowed.get(
                         type(node.op)
@@ -149,11 +143,8 @@ class ToolsSystem:
                 raise ValueError()
 
 
-
             return {
-                "result": evaluate(
-                    tree.body
-                )
+                "result": evaluate(tree.body)
             }
 
 
@@ -169,21 +160,15 @@ class ToolsSystem:
     # Text Analysis
     # =====================
 
-    def text_info(
-        self,
-        text
-    ):
+    def text_info(self, text):
 
         return {
 
-            "characters":
-                len(text),
+            "characters": len(text),
 
-            "words":
-                len(text.split()),
+            "words": len(text.split()),
 
             "language":
-
                 "Arabic"
                 if any(
                     "\u0600" <= c <= "\u06FF"
@@ -199,30 +184,22 @@ class ToolsSystem:
     # System Info
     # =====================
 
-    def system_info(
-        self,
-        _
-    ):
+    def system_info(self, _):
 
         return {
 
-            "system":
-                "NEURA-1",
+            "system": "NEURA-1",
 
-            "version":
-                "0.5.0",
+            "version": "0.5.0",
 
-            "model":
-                os.getenv(
-                    "MODEL_NAME",
-                    "Qwen/Qwen3.5-9B"
-                ),
+            "model": os.getenv(
+                "MODEL_NAME",
+                "Qwen/Qwen3.5-9B"
+            ),
 
-            "platform":
-                platform.system(),
+            "platform": platform.system(),
 
-            "status":
-                "online"
+            "status": "online"
 
         }
 
@@ -232,10 +209,7 @@ class ToolsSystem:
     # Time
     # =====================
 
-    def current_time(
-        self,
-        _
-    ):
+    def current_time(self, _):
 
         return {
 
@@ -254,10 +228,7 @@ class ToolsSystem:
     # Files
     # =====================
 
-    def file_info(
-        self,
-        path
-    ):
+    def file_info(self, path):
 
         try:
 
@@ -286,18 +257,15 @@ class ToolsSystem:
     # Memory
     # =====================
 
-    def memory_search(
-        self,
-        query
-    ):
+    def memory_search(self, query):
 
         return {
 
-            "tool":
-                "memory_search",
+            "tool": "memory_search",
 
-            "query":
-                query
+            "query": query,
+
+            "status": "ready for memory database"
 
         }
 
@@ -307,18 +275,15 @@ class ToolsSystem:
     # Knowledge
     # =====================
 
-    def knowledge_search(
-        self,
-        query
-    ):
+    def knowledge_search(self, query):
 
         return {
 
-            "tool":
-                "knowledge_search",
+            "tool": "knowledge_search",
 
-            "query":
-                query
+            "query": query,
+
+            "status": "ready for knowledge base"
 
         }
 
@@ -328,18 +293,13 @@ class ToolsSystem:
     # Translation
     # =====================
 
-    def translate(
-        self,
-        text
-    ):
+    def translate(self, text):
 
         return {
 
-            "input":
-                text,
+            "input": text,
 
-            "status":
-                "translation API pending"
+            "status": "translation API pending"
 
         }
 
@@ -347,9 +307,7 @@ class ToolsSystem:
 
 if __name__ == "__main__":
 
-
     tools = ToolsSystem()
-
 
     print(
         tools.available_tools()
