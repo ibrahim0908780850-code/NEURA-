@@ -7,38 +7,36 @@ class Config:
     def __init__(self):
 
         # System information
-        self.app_name = "NEURA-1"
-        self.version = "0.5.0"
+        self.app_name = os.getenv("APP_NAME", "NEURA-1")
+        self.version = os.getenv("APP_VERSION", "0.5.0")
         self.organization = "Neural AI Organization"
         self.description = "Arabic-first intelligent AI system"
 
-        # Server settings
-        self.host = os.getenv(
-            "HOST",
-            "0.0.0.0"
+        # Server
+        self.host = os.getenv("HOST", "0.0.0.0")
+        self.port = int(os.getenv("PORT", 8000))
+
+        # Model
+        self.model_name = os.getenv(
+            "MODEL_NAME",
+            "Qwen/Qwen3.5-9B"
         )
 
-        self.port = int(
-            os.getenv(
-                "PORT",
-                8000
-            )
+        self.temperature = float(
+            os.getenv("TEMPERATURE", 0.7)
         )
 
-        # Model settings
-        self.model_name = "Qwen/Qwen2.5-7B-Instruct"
+        self.max_tokens = int(
+            os.getenv("MAX_TOKENS", 256)
+        )
 
-        self.temperature = 0.7
-        self.max_tokens = 256
-
-        # Language
+        # Languages
         self.primary_language = "ar"
         self.supported_languages = [
             "ar",
             "en"
         ]
 
-        # Load JSON config
         self.load_config()
 
 
@@ -49,9 +47,9 @@ class Config:
                 "config.json",
                 "r",
                 encoding="utf-8"
-            ) as file:
+            ) as f:
 
-                self.data = json.load(file)
+                self.data = json.load(f)
 
         except Exception:
 
