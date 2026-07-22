@@ -1,45 +1,45 @@
 {
-"system": {
-"name": "NEURA-1",
-"version": "0.5.0",
-"organization": "Neural AI Organization",
-"description": "Arabic-first intelligent AI system"
-},
+  "system": {
+    "name": "NEURA-1",
+    "version": "0.5.0",
+    "organization": "Neural AI Organization",
+    "description": "Arabic-first intelligent AI system"
+  },
 
-"model": {
-"name": "NEURA-1",
-"base_model": "Qwen/Qwen2.5-7B-Instruct",
-"provider": "Hugging Face",
-"temperature": 0.7,
-"max_tokens": 256
-},
+  "model": {
+    "name": "NEURA-1",
+    "base_model": "Qwen/Qwen3.5-9B",
+    "provider": "Hugging Face",
+    "temperature": 0.7,
+    "max_tokens": 256
+  },
 
-"language": {
-"primary": "ar",
-"supported": [
-"ar",
-"en"
-]
-},
+  "language": {
+    "primary": "ar",
+    "supported": [
+      "ar",
+      "en"
+    ]
+  },
 
-"deployment": {
-"type": "cloud",
-"provider": "TBD",
-"gpu_required": true
-},
+  "deployment": {
+    "type": "cloud",
+    "provider": "Railway + Hugging Face",
+    "gpu_required": false
+  },
 
-"features": {
-"chat": true,
-"memory": true,
-"conversation": true,
-"personality": true,
-"knowledge_base": true,
-"tools": true,
-"authentication": true
-},
+  "features": {
+    "chat": true,
+    "memory": true,
+    "conversation": true,
+    "personality": true,
+    "knowledge_base": true,
+    "tools": true,
+    "authentication": true
+  },
 
-"api": {
-"host": "0.0.0.0",
-"port": 8000
-}
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8080
+  }
 }
