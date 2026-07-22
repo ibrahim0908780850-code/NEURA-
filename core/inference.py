@@ -16,7 +16,7 @@ class InferenceEngine:
             model
             or os.getenv(
                 "MODEL_NAME",
-                "meta-llama/Llama-3.1-8B-Instruct"
+                "Qwen/Qwen2.5-7B-Instruct:fastest
             )
         )
 
