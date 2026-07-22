@@ -9,72 +9,67 @@ import os
 from core.config import Config
 from core.inference_api import InferenceAPI
 
-
 class ModelLoader:
-    """
-    Loads and manages the AI model connection.
-    """
+"""
+Loads and manages the AI model connection.
+"""
 
-    def __init__(self, model_name=None):
+def __init__(self, model_name=None):  
 
-        self.config = Config()
+    self.config = Config()  
 
-        self.model_name = (
-            model_name
-            or os.getenv(
-                "MODEL_NAME",
-                "Qwen/Qwen3.5-9B"
-            )
-        )
+    self.model_name = (  
+        model_name  
+        or self.config.model_name  
+    )  
 
-        self.model = None
+    self.model = None  
 
-        self.inference = InferenceAPI()
+    self.inference = InferenceAPI()  
 
 
-    def load(self):
-        """
-        Initialize external inference connection.
-        """
+def load(self):  
+    """  
+    Initialize external inference connection.  
+    """  
 
-        print(
-            f"🤖 Connecting NEURA model: {self.model_name}"
-        )
+    print(  
+        f"Connecting model: {self.model_name}"  
+    )  
 
-        self.model = self.inference
+    self.model = self.inference  
 
-        return self.model
-
-
-    def generate(self, prompt):
-        """
-        Generate AI response.
-        """
-
-        if self.model is None:
-            self.load()
-
-        return self.model.generate(prompt)
+    return self.model  
 
 
-    def get_status(self):
-        """
-        Return model status.
-        """
+def generate(self, prompt):  
+    """  
+    Generate AI response.  
+    """  
 
-        return {
-            "model": self.model_name,
-            "loaded": self.model is not None,
-            "provider": "Hugging Face Inference API"
-        }
+    if self.model is None:  
+        self.load()  
+
+    return self.model.generate(prompt)  
 
 
-if __name__ == "__main__":
+def get_status(self):  
+    """  
+    Return model status.  
+    """  
 
-    loader = ModelLoader()
+    return {  
+        "model": self.model_name,  
+        "loaded": self.model is not None,  
+        "provider": "Hugging Face Inference API"  
+    }
 
-    loader.load()
+if name == "main":
 
-    print(
-        loader.get_status()
-    )
+loader = ModelLoader()  
+
+loader.load()  
+
+print(  
+    loader.get_status()  
+) 
