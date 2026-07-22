@@ -16,7 +16,7 @@ class InferenceEngine:
             model
             or os.getenv(
                 "MODEL_NAME",
-                "Qwen/Qwen2.5-7B-Instruct:fastest
+                "Qwen/Qwen2.5-7B-Instruct"
             )
         )
 
@@ -35,7 +35,6 @@ class InferenceEngine:
     ):
 
         messages = []
-
 
         if history:
 
