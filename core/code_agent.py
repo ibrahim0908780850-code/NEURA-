@@ -6,7 +6,6 @@ with programming code.
 """
 
 import ast
-import re
 
 
 class CodeAgent:
@@ -16,38 +15,52 @@ class CodeAgent:
 
         errors = []
 
-        try:
-
-            ast.parse(code)
+        language = self.detect_language(code)
 
 
-        except SyntaxError as e:
+        if language == "Python":
 
-            errors.append({
+            try:
 
-                "type": "SyntaxError",
-
-                "message": e.msg,
-
-                "line": e.lineno,
-
-                "offset": e.offset
-
-            })
+                ast.parse(code)
 
 
-        except Exception as e:
+            except SyntaxError as e:
 
-            errors.append({
+                errors.append({
 
-                "type": type(e).__name__,
+                    "type":
+                        "SyntaxError",
 
-                "message": str(e)
+                    "message":
+                        e.msg,
 
-            })
+                    "line":
+                        e.lineno,
+
+                    "offset":
+                        e.offset
+
+                })
+
+
+            except Exception as e:
+
+                errors.append({
+
+                    "type":
+                        type(e).__name__,
+
+                    "message":
+                        str(e)
+
+                })
 
 
         return {
+
+            "language":
+                language,
 
             "valid":
                 len(errors) == 0,
@@ -61,14 +74,53 @@ class CodeAgent:
 
     def detect_language(self, code):
 
-        if "import " in code or "def " in code:
-            return "Python"
+        indicators = {
 
-        if "function " in code or "console.log" in code:
-            return "JavaScript"
+            "Python": [
+                "import ",
+                "def ",
+                "class ",
+                "print("
+            ],
 
-        if "#include" in code:
-            return "C/C++"
+            "JavaScript": [
+                "function ",
+                "console.log",
+                "const ",
+                "let "
+            ],
+
+            "C/C++": [
+                "#include",
+                "int main"
+            ],
+
+            "Java": [
+                "public class",
+                "System.out.println"
+            ],
+
+            "HTML": [
+                "<html",
+                "<div"
+            ],
+
+            "SQL": [
+                "SELECT ",
+                "INSERT INTO"
+            ]
+
+        }
+
+
+        for language, keys in indicators.items():
+
+            for key in keys:
+
+                if key in code:
+
+                    return language
+
 
         return "Unknown"
 
@@ -76,16 +128,27 @@ class CodeAgent:
 
     def explain(self, code):
 
+        analysis = self.analyze(code)
+
+
         return {
 
             "language":
-                self.detect_language(code),
+                analysis["language"],
 
-            "length":
+            "characters":
                 len(code),
 
+            "lines":
+                len(
+                    code.splitlines()
+                ),
+
+            "valid":
+                analysis["valid"],
+
             "explanation":
-                "NEURA will analyze this code using the reasoning model."
+                "NEURA Code Agent analyzed the code structure and syntax."
 
         }
 
@@ -95,7 +158,6 @@ class CodeAgent:
 
         analysis = self.analyze(code)
 
-
         suggestions = []
 
 
@@ -104,14 +166,23 @@ class CodeAgent:
             if error["type"] == "SyntaxError":
 
                 suggestions.append(
-                    "Check brackets, quotes, indentation and missing symbols."
+                    "Review indentation, brackets, quotes and missing syntax."
+                )
+
+
+        if analysis["language"] == "Python":
+
+            if "print " in code:
+
+                suggestions.append(
+                    "Use print() function in Python 3."
                 )
 
 
         return {
 
-            "errors":
-                analysis["errors"],
+            "analysis":
+                analysis,
 
             "suggestions":
                 suggestions
@@ -132,6 +203,9 @@ class CodeAgent:
                 "status":
                     "Code is valid",
 
+                "language":
+                    analysis["language"],
+
                 "code":
                     code
 
@@ -147,10 +221,7 @@ class CodeAgent:
                 analysis,
 
             "instruction":
-                """
-Send code and errors to NEURA reasoning engine
-to generate corrected version.
-"""
+                "Send code and errors to NEURA reasoning engine."
 
         }
 
