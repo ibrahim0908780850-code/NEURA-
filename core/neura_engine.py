@@ -1,16 +1,19 @@
 """
 NEURA-1 Core Engine
 
-Connects NEURA intelligence with:
-- External AI inference
-- Memory system
-- Knowledge base
-- Tools system
-- Tool Router
+Main intelligence layer.
+
+Connects:
+- AI Model
+- Memory
+- Knowledge
+- Tools
+- Router
 - Code Agent
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
+
 
 from core.config import Config
 from core.model_loader import ModelLoader
@@ -23,9 +26,6 @@ from core.code_agent import CodeAgent
 
 
 class NEURAEngine:
-    """
-    Main AI engine for NEURA-1.
-    """
 
 
     def __init__(self):
@@ -33,10 +33,10 @@ class NEURAEngine:
         self.config = Config()
 
         self.name = "NEURA-1"
-        self.version = "0.6.0"
+        self.version = "0.7.0"
 
 
-        # Model
+        # AI Model
 
         self.model_loader = ModelLoader()
 
@@ -45,31 +45,21 @@ class NEURAEngine:
 
 
 
-        # Memory
+        # Systems
 
         self.memory = MemorySystem()
 
-
-
-        # Knowledge
-
         self.knowledge = KnowledgeBase()
-
-
-
-        # Tools
 
         self.tools = ToolsSystem()
 
 
 
-        # Code Agent
+        # Agents
 
         self.code_agent = CodeAgent()
 
 
-
-        # Tool Router
 
         self.router = ToolRouter(
             self.tools,
@@ -78,23 +68,41 @@ class NEURAEngine:
 
 
 
-        self.created = datetime.utcnow()
-
+        self.created = datetime.now(
+            timezone.utc
+        )
 
 
         self.knowledge.add_knowledge(
             "NEURA-1",
-            "NEURA-1 is an Arabic-first AI system with tools, memory and reasoning."
+            """
+NEURA-1 is an Arabic-first AI system.
+It supports memory, tools, web search,
+knowledge retrieval and coding assistance.
+"""
         )
-
 
 
 
     def load_model(self):
 
-        self.model = self.model_loader.load()
+        if self.inference:
 
-        self.inference = self.model_loader.inference
+            return {
+                "status":
+                    "already loaded"
+            }
+
+
+
+        self.model = (
+            self.model_loader.load()
+        )
+
+
+        self.inference = (
+            self.model_loader.inference
+        )
 
 
         return {
@@ -109,7 +117,6 @@ class NEURAEngine:
 
 
 
-
     def process_message(
         self,
         message,
@@ -118,7 +125,13 @@ class NEURAEngine:
     ):
 
 
-        # Save memory
+        timestamp = datetime.now(
+            timezone.utc
+        ).isoformat()
+
+
+
+        # Memory
 
         self.memory.save_memory(
             user_id,
@@ -127,15 +140,18 @@ class NEURAEngine:
 
 
 
-        # Check tools first
+        # Tool Routing
 
-        tool_result = self.router.execute(
-            message
+        tool_result = (
+            self.router.execute(
+                message
+            )
         )
 
 
-
-        if tool_result.get("tool") != "model":
+        if tool_result.get(
+            "tool"
+        ) != "model":
 
             return {
 
@@ -146,16 +162,18 @@ class NEURAEngine:
                     user_id,
 
                 "timestamp":
-                    datetime.utcnow().isoformat()
+                    timestamp
 
             }
 
 
 
-        # Knowledge search
+        # Knowledge Retrieval
 
-        knowledge_results = self.knowledge.search(
-            message
+        knowledge_results = (
+            self.knowledge.search(
+                message
+            )
         )
 
 
@@ -165,8 +183,8 @@ class NEURAEngine:
         if knowledge_results:
 
             context = "\n".join(
-                item["content"]
-                for item in knowledge_results
+                x["content"]
+                for x in knowledge_results
             )
 
 
@@ -175,32 +193,64 @@ class NEURAEngine:
 
 
 
-        if context:
+        if history:
 
             prompt = f"""
-Knowledge:
 
-{context}
+Conversation history:
+
+{history}
 
 
 User:
 
 {message}
+
 """
 
 
 
-        # Load AI model
+        if context:
 
-        if self.inference is None:
+            prompt += f"""
+
+Relevant knowledge:
+
+{context}
+
+"""
+
+
+
+        # Load model
+
+        if not self.inference:
 
             self.load_model()
 
 
 
-        response = self.inference.generate(
-            prompt
-        )
+        try:
+
+            response = (
+                self.inference.generate(
+                    prompt
+                )
+            )
+
+
+        except Exception as e:
+
+
+            response = {
+
+                "error":
+                    str(e),
+
+                "fallback":
+                    "NEURA model unavailable."
+
+            }
 
 
 
@@ -213,11 +263,26 @@ User:
                 user_id,
 
             "timestamp":
-                datetime.utcnow().isoformat()
+                timestamp
 
         }
 
 
+
+    def code_repair(
+        self,
+        code
+    ):
+
+        if not self.inference:
+
+            self.load_model()
+
+
+        return self.code_agent.repair(
+            code,
+            self.inference
+        )
 
 
 
@@ -228,29 +293,38 @@ User:
             "name":
                 self.name,
 
+
             "version":
                 self.version,
+
 
             "model":
                 self.model_loader.model_name,
 
+
             "model_loaded":
                 self.model is not None,
+
 
             "inference_ready":
                 self.inference is not None,
 
+
             "tools":
                 self.tools.available_tools(),
+
 
             "memory_ready":
                 True,
 
+
             "knowledge_ready":
                 True,
 
+
             "code_agent_ready":
                 True,
+
 
             "router_ready":
                 True
