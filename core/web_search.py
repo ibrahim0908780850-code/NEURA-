@@ -5,8 +5,9 @@ Allows NEURA-1 to search the internet.
 """
 
 import os
-import re
 import requests
+
+from core.search_cleaner import SearchCleaner
 
 
 class WebSearch:
@@ -22,41 +23,6 @@ class WebSearch:
         )
 
 
-    def clean_content(self, text):
-
-        if not text:
-            return ""
-
-        patterns = [
-            r"Shutterstock.*",
-            r"FILE PHOTO.*",
-            r"purchase_order.*",
-            r"client:.*",
-            r"job:.*",
-            r"other:.*",
-            r"إعلان",
-        ]
-
-        for pattern in patterns:
-
-            text = re.sub(
-                pattern,
-                "",
-                text,
-                flags=re.IGNORECASE | re.DOTALL
-            )
-
-
-        text = re.sub(
-            r"\s+",
-            " ",
-            text
-        )
-
-        return text.strip()
-
-
-
     def search(
         self,
         query,
@@ -66,30 +32,24 @@ class WebSearch:
         if not self.api_key:
 
             return {
-                "error":
-                "Web search unavailable"
+                "success": False,
+                "error": "Web search unavailable"
             }
 
 
         payload = {
 
-            "api_key":
-                self.api_key,
+            "api_key": self.api_key,
 
-            "query":
-                query,
+            "query": query,
 
-            "search_depth":
-                "advanced",
+            "search_depth": "advanced",
 
-            "max_results":
-                limit,
+            "max_results": limit,
 
-            "include_answer":
-                True,
+            "include_answer": True,
 
-            "include_raw_content":
-                False
+            "include_raw_content": False
 
         }
 
@@ -131,7 +91,7 @@ class WebSearch:
                         ),
 
                     "content":
-                        self.clean_content(
+                        SearchCleaner.clean(
                             item.get(
                                 "content",
                                 ""
@@ -142,6 +102,8 @@ class WebSearch:
 
 
             return {
+
+                "success": True,
 
                 "answer":
                     data.get(
@@ -158,16 +120,36 @@ class WebSearch:
         except requests.exceptions.Timeout:
 
             return {
+
+                "success": False,
+
                 "error":
-                "Search timeout"
+                    "Search request timeout"
+
             }
 
 
         except requests.exceptions.RequestException as e:
 
             return {
+
+                "success": False,
+
                 "error":
-                str(e)
+                    str(e)
+
+            }
+
+
+        except Exception as e:
+
+            return {
+
+                "success": False,
+
+                "error":
+                    f"Unexpected error: {str(e)}"
+
             }
 
 
@@ -176,8 +158,10 @@ if __name__ == "__main__":
 
     web = WebSearch()
 
-    print(
-        web.search(
-            "آخر أخبار الذكاء الاصطناعي"
-        )
+
+    result = web.search(
+        "آخر أخبار الذكاء الاصطناعي"
     )
+
+
+    print(result)
