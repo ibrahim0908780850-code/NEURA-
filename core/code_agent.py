@@ -36,11 +36,8 @@ class CodeAgent:
                 errors.append({
 
                     "type": "SyntaxError",
-
                     "message": e.msg,
-
                     "line": e.lineno,
-
                     "offset": e.offset
 
                 })
@@ -50,39 +47,26 @@ class CodeAgent:
 
                 errors.append({
 
-                    "type":
-                        type(e).__name__,
-
-                    "message":
-                        str(e)
+                    "type": type(e).__name__,
+                    "message": str(e)
 
                 })
 
 
-        issues = self.detect_issues(
-            code,
-            language
-        )
-
-
         errors.extend(
-            issues
+            self.detect_issues(
+                code,
+                language
+            )
         )
 
 
         return {
 
-            "agent":
-                self.name,
-
-            "language":
-                language,
-
-            "valid":
-                len(errors) == 0,
-
-            "errors":
-                errors
+            "agent": self.name,
+            "language": language,
+            "valid": len(errors) == 0,
+            "errors": errors
 
         }
 
@@ -142,11 +126,7 @@ class CodeAgent:
 
 
 
-    def detect_issues(
-        self,
-        code,
-        language
-    ):
+    def detect_issues(self, code, language):
 
         issues = []
 
@@ -197,9 +177,7 @@ class CodeAgent:
                 len(code),
 
             "lines":
-                len(
-                    code.splitlines()
-                ),
+                len(code.splitlines()),
 
             "valid":
                 analysis["valid"],
@@ -223,27 +201,17 @@ class CodeAgent:
 
         for error in analysis["errors"]:
 
-            error_type = error["type"]
-
-
-            if error_type == "SyntaxError":
+            if error["type"] == "SyntaxError":
 
                 suggestions.append(
                     "Fix syntax near the reported line."
                 )
 
 
-            elif error_type == "IndentationWarning":
+            elif error["type"] == "IndentationWarning":
 
                 suggestions.append(
                     "Use consistent indentation."
-                )
-
-
-            elif error_type == "StyleWarning":
-
-                suggestions.append(
-                    "Update old syntax to modern Python style."
                 )
 
 
@@ -259,10 +227,7 @@ class CodeAgent:
 
 
 
-    def fix(
-        self,
-        code
-    ):
+    def fix(self, code, engine=None):
 
         analysis = self.analyze(code)
 
@@ -283,48 +248,42 @@ class CodeAgent:
             }
 
 
+        if engine:
+
+            return self.repair(
+                code,
+                engine
+            )
+
+
         return {
 
             "status":
                 "Needs AI repair",
 
             "analysis":
-                analysis,
-
-            "instruction":
-                "Send code and errors to NEURA reasoning engine."
+                analysis
 
         }
 
 
 
-    def repair(
-        self,
-        code,
-        engine
-    ):
+    def repair(self, code, engine):
 
         analysis = self.analyze(code)
 
 
-        if analysis["valid"]:
+        if engine.inference is None:
 
-            return {
+            engine.load_model()
 
-                "status":
-                    "No repair needed",
-
-                "code":
-                    code
-
-            }
 
 
         prompt = f"""
 
 You are NEURA Code Repair Agent.
 
-Repair this code.
+Repair the following code.
 
 Language:
 {analysis['language']}
@@ -338,13 +297,13 @@ Code:
 
 
 Return:
-- Fixed code
-- Explanation
 
+1. Fixed code
+2. Explanation
 """
 
 
-        response = engine.generate(
+        response = engine.inference.generate(
             prompt
         )
 
