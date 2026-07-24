@@ -1,21 +1,25 @@
 """
-NEURA-1 Tools System
+NEURA-1 Tools System v0.6.1
 
 Manages external capabilities and actions
 for the NEURA-1 assistant.
 """
 
+
 import ast
 import operator
 import os
 import platform
-import datetime
+from datetime import datetime
+
 
 from core.web_search import WebSearch
 from core.code_agent import CodeAgent
 
 
+
 class ToolsSystem:
+
 
     def __init__(self):
 
@@ -26,45 +30,74 @@ class ToolsSystem:
 
         self.tools = {
 
-            "calculator": self.calculator,
+            "calculator":
+                self.calculator,
 
-            "text_info": self.text_info,
+            "text_info":
+                self.text_info,
 
-            "system_info": self.system_info,
+            "system_info":
+                self.system_info,
 
-            "current_time": self.current_time,
+            "current_time":
+                self.current_time,
 
-            "file_info": self.file_info,
+            "file_info":
+                self.file_info,
 
-            "memory_search": self.memory_search,
+            "memory_search":
+                self.memory_search,
 
-            "knowledge_search": self.knowledge_search,
+            "knowledge_search":
+                self.knowledge_search,
 
-            "translate": self.translate,
+            "translate":
+                self.translate,
 
-            "web_search": self.run_web_search,
+            "web_search":
+                self.run_web_search,
 
-            "code_analyze": self.code_analyze,
+            "code_agent":
+                self.code_fix,
 
-            "code_fix": self.code_fix
+            "code_analyze":
+                self.code_analyze,
+
+            "code_fix":
+                self.code_fix
 
         }
 
 
+
     def available_tools(self):
 
-        return list(self.tools.keys())
+        return list(
+            self.tools.keys()
+        )
 
 
-    def run_tool(self, tool_name, data):
 
-        if tool_name not in self.tools:
+    def run_tool(
+        self,
+        tool_name,
+        data
+    ):
+
+        tool = self.tools.get(tool_name)
+
+
+        if not tool:
 
             return {
-                "error": "Tool not found"
+
+                "error":
+                    "Tool not found"
+
             }
 
-        return self.tools[tool_name](data)
+
+        return tool(data)
 
 
 
@@ -72,7 +105,11 @@ class ToolsSystem:
     # Web Search
     # =====================
 
-    def run_web_search(self, query):
+
+    def run_web_search(
+        self,
+        query
+    ):
 
         return self.web.search(query)
 
@@ -82,13 +119,20 @@ class ToolsSystem:
     # Code Agent
     # =====================
 
-    def code_analyze(self, code):
+
+    def code_analyze(
+        self,
+        code
+    ):
 
         return self.code.analyze(code)
 
 
 
-    def code_fix(self, code):
+    def code_fix(
+        self,
+        code
+    ):
 
         return self.code.fix(code)
 
@@ -98,19 +142,52 @@ class ToolsSystem:
     # Calculator
     # =====================
 
-    def calculator(self, expression):
+
+    def calculator(
+        self,
+        expression
+    ):
+
 
         try:
 
-            allowed = {
+            replacements = {
 
-                ast.Add: operator.add,
-                ast.Sub: operator.sub,
-                ast.Mult: operator.mul,
-                ast.Div: operator.truediv,
-                ast.Pow: operator.pow
+                "ضرب": "*",
+                "قسمة": "/",
+                "جمع": "+",
+                "طرح": "-"
 
             }
+
+
+            for key, value in replacements.items():
+
+                expression = expression.replace(
+                    key,
+                    value
+                )
+
+
+            allowed = {
+
+                ast.Add:
+                    operator.add,
+
+                ast.Sub:
+                    operator.sub,
+
+                ast.Mult:
+                    operator.mul,
+
+                ast.Div:
+                    operator.truediv,
+
+                ast.Pow:
+                    operator.pow
+
+            }
+
 
 
             tree = ast.parse(
@@ -119,18 +196,33 @@ class ToolsSystem:
             )
 
 
+
             def evaluate(node):
 
-                if isinstance(node, ast.Constant):
 
-                    return node.value
+                if isinstance(
+                    node,
+                    ast.Constant
+                ):
+
+                    if isinstance(
+                        node.value,
+                        (int, float)
+                    ):
+
+                        return node.value
 
 
-                if isinstance(node, ast.BinOp):
+
+                if isinstance(
+                    node,
+                    ast.BinOp
+                ):
 
                     operation = allowed.get(
                         type(node.op)
                     )
+
 
                     if operation:
 
@@ -140,19 +232,42 @@ class ToolsSystem:
                         )
 
 
-                raise ValueError()
+                raise ValueError(
+                    "Invalid expression"
+                )
+
 
 
             return {
-                "result": evaluate(tree.body)
+
+                "tool":
+                    "calculator",
+
+                "expression":
+                    expression,
+
+                "result":
+                    evaluate(
+                        tree.body
+                    )
+
             }
 
 
-        except:
+
+        except Exception as e:
+
 
             return {
-                "error": "Invalid calculation"
+
+                "tool":
+                    "calculator",
+
+                "error":
+                    str(e)
+
             }
+
 
 
 
@@ -160,20 +275,30 @@ class ToolsSystem:
     # Text Analysis
     # =====================
 
-    def text_info(self, text):
+
+    def text_info(
+        self,
+        text
+    ):
+
 
         return {
 
-            "characters": len(text),
+            "characters":
+                len(text),
 
-            "words": len(text.split()),
+            "words":
+                len(text.split()),
 
             "language":
+
                 "Arabic"
+
                 if any(
                     "\u0600" <= c <= "\u06FF"
                     for c in text
                 )
+
                 else "English"
 
         }
@@ -184,24 +309,35 @@ class ToolsSystem:
     # System Info
     # =====================
 
-    def system_info(self, _):
+
+    def system_info(
+        self,
+        _
+    ):
+
 
         return {
 
-            "system": "NEURA-1",
+            "system":
+                "NEURA-1",
 
-            "version": "0.5.0",
+            "version":
+                "0.6.1",
 
-            "model": os.getenv(
-                "MODEL_NAME",
-                "Qwen/Qwen3.5-9B"
-            ),
+            "model":
+                os.getenv(
+                    "MODEL_NAME",
+                    "Qwen/Qwen3.5-9B"
+                ),
 
-            "platform": platform.system(),
+            "platform":
+                platform.system(),
 
-            "status": "online"
+            "status":
+                "online"
 
         }
+
 
 
 
@@ -209,12 +345,17 @@ class ToolsSystem:
     # Time
     # =====================
 
-    def current_time(self, _):
+
+    def current_time(
+        self,
+        _
+    ):
+
 
         return {
 
             "time":
-                datetime.datetime.utcnow()
+                datetime.utcnow()
                 .isoformat(),
 
             "timezone":
@@ -228,18 +369,29 @@ class ToolsSystem:
     # Files
     # =====================
 
-    def file_info(self, path):
+
+    def file_info(
+        self,
+        path
+    ):
+
 
         try:
 
+            exists = os.path.exists(path)
+
+
             return {
 
+                "path":
+                    path,
+
                 "exists":
-                    os.path.exists(path),
+                    exists,
 
                 "size":
                     os.path.getsize(path)
-                    if os.path.exists(path)
+                    if exists
                     else 0
 
             }
@@ -248,8 +400,12 @@ class ToolsSystem:
         except Exception as e:
 
             return {
-                "error": str(e)
+
+                "error":
+                    str(e)
+
             }
+
 
 
 
@@ -257,15 +413,22 @@ class ToolsSystem:
     # Memory
     # =====================
 
-    def memory_search(self, query):
+
+    def memory_search(
+        self,
+        query
+    ):
 
         return {
 
-            "tool": "memory_search",
+            "tool":
+                "memory_search",
 
-            "query": query,
+            "query":
+                query,
 
-            "status": "ready for memory database"
+            "status":
+                "connected"
 
         }
 
@@ -275,17 +438,25 @@ class ToolsSystem:
     # Knowledge
     # =====================
 
-    def knowledge_search(self, query):
+
+    def knowledge_search(
+        self,
+        query
+    ):
 
         return {
 
-            "tool": "knowledge_search",
+            "tool":
+                "knowledge_search",
 
-            "query": query,
+            "query":
+                query,
 
-            "status": "ready for knowledge base"
+            "status":
+                "connected"
 
         }
+
 
 
 
@@ -293,21 +464,30 @@ class ToolsSystem:
     # Translation
     # =====================
 
-    def translate(self, text):
+
+    def translate(
+        self,
+        text
+    ):
 
         return {
 
-            "input": text,
+            "input":
+                text,
 
-            "status": "translation API pending"
+            "status":
+                "translation engine pending"
 
         }
 
 
 
+
 if __name__ == "__main__":
 
+
     tools = ToolsSystem()
+
 
     print(
         tools.available_tools()
@@ -317,6 +497,6 @@ if __name__ == "__main__":
     print(
         tools.run_tool(
             "calculator",
-            "10*5"
+            "25 ضرب 4"
         )
     )
