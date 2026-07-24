@@ -5,7 +5,6 @@ Automatically selects the correct tool
 based on user request.
 """
 
-
 import re
 
 
@@ -23,6 +22,25 @@ class ToolRouter:
 
 
 
+    def extract_code(self, text):
+
+        """
+        Extract code blocks from user message.
+        """
+
+        if "```" in text:
+
+            parts = text.split("```")
+
+            if len(parts) >= 2:
+
+                return parts[1]
+
+
+        return text
+
+
+
     def choose_tool(
         self,
         message
@@ -31,12 +49,13 @@ class ToolRouter:
         text = message.lower()
 
 
+
         # =====================
         # Calculator
         # =====================
 
         if re.search(
-            r"\d+\s*[\+\-\*\/]\s*\d+",
+            r"\d+\s*(\+|\-|\*|\/|ضرب|قسمة|جمع|طرح)\s*\d+",
             text
         ):
 
@@ -51,9 +70,10 @@ class ToolRouter:
         search_words = [
 
             "ابحث",
-            "بحث",
+            "بحث عن",
             "اخبار",
-            "آخر",
+            "أخبار",
+            "آخر الأخبار",
             "latest",
             "search",
             "news"
@@ -62,7 +82,7 @@ class ToolRouter:
 
 
         if any(
-            word in text
+            word.lower() in text
             for word in search_words
         ):
 
@@ -80,16 +100,19 @@ class ToolRouter:
             "برمجة",
             "python",
             "javascript",
+            "java",
             "خطأ",
             "error",
             "fix",
-            "debug"
+            "debug",
+            "صلح",
+            "عدل"
 
         ]
 
 
         if any(
-            word in text
+            word.lower() in text
             for word in code_words
         ):
 
@@ -103,6 +126,7 @@ class ToolRouter:
 
         if (
             "وقت" in text
+            or "الساعة" in text
             or "time" in text
         ):
 
@@ -111,7 +135,7 @@ class ToolRouter:
 
 
         # =====================
-        # Default
+        # Default AI Model
         # =====================
 
         return "model"
@@ -123,10 +147,14 @@ class ToolRouter:
         message
     ):
 
+
         tool = self.choose_tool(
             message
         )
 
+
+
+        # Send to AI model
 
         if tool == "model":
 
@@ -142,13 +170,31 @@ class ToolRouter:
 
 
 
+        # Code Agent
+
         if tool == "code_agent":
+
 
             if self.code_agent:
 
-                return self.code_agent.fix(
+
+                code = self.extract_code(
                     message
                 )
+
+
+                return {
+
+                    "tool":
+                        "code_agent",
+
+                    "result":
+                        self.code_agent.fix(
+                            code
+                        )
+
+                }
+
 
 
             return {
@@ -160,7 +206,13 @@ class ToolRouter:
 
 
 
-        if tool in self.tools.tools:
+
+        # External Tools
+
+        if (
+            self.tools
+            and tool in self.tools.tools
+        ):
 
             return self.tools.run_tool(
                 tool,
@@ -168,12 +220,14 @@ class ToolRouter:
             )
 
 
+
         return {
 
             "error":
-                "Unknown tool"
+                f"Tool '{tool}' unavailable"
 
         }
+
 
 
 
@@ -191,8 +245,18 @@ if __name__ == "__main__":
         )
     )
 
+
     print(
         router.choose_tool(
             "ابحث عن الذكاء الاصطناعي"
         )
     )
+
+
+    print(
+        router.choose_tool(
+            """
+اصلح هذا الكود:
+
+```python
+print("hello")
