@@ -1,8 +1,8 @@
 """
-NEURA-1 Code Agent v0.7
+NEURA-1 Code Agent v0.8
 
-Analyzes, explains, fixes and assists
-with programming code.
+Analyzes, explains, fixes and repairs code
+using NEURA reasoning engine.
 """
 
 import ast
@@ -10,9 +10,11 @@ import ast
 
 class CodeAgent:
 
+
     def __init__(self):
 
         self.name = "NEURA Code Agent"
+
 
 
     def analyze(self, code):
@@ -27,6 +29,7 @@ class CodeAgent:
             try:
 
                 ast.parse(code)
+
 
             except SyntaxError as e:
 
@@ -51,11 +54,15 @@ class CodeAgent:
         return {
 
             "agent": self.name,
+
             "language": language,
+
             "valid": len(errors) == 0,
+
             "errors": errors
 
         }
+
 
 
 
@@ -70,6 +77,7 @@ class CodeAgent:
                 "print("
             ],
 
+
             "JavaScript": [
                 "function ",
                 "console.log",
@@ -77,14 +85,16 @@ class CodeAgent:
                 "let "
             ],
 
+
             "HTML": [
                 "<html",
                 "<div"
             ],
 
+
             "SQL": [
                 "SELECT ",
-                "INSERT"
+                "INSERT "
             ]
 
         }
@@ -100,6 +110,8 @@ class CodeAgent:
 
 
         return "Unknown"
+
+
 
 
 
@@ -119,7 +131,8 @@ class CodeAgent:
 
                 issues.append({
 
-                    "type": "StyleWarning",
+                    "type":
+                    "StyleWarning",
 
                     "message":
                     "Use print() in Python 3"
@@ -144,17 +157,23 @@ class CodeAgent:
 
 
 
+
+
+
     def explain(self, code):
 
-        result = self.analyze(code)
+        analysis = self.analyze(code)
 
 
         return {
 
-            "analysis": result,
+            "analysis":
+            analysis,
+
 
             "lines":
             len(code.splitlines()),
+
 
             "characters":
             len(code)
@@ -163,45 +182,22 @@ class CodeAgent:
 
 
 
-    def suggest_fix(self, code):
+
+
+
+
+    def fix(
+        self,
+        code,
+        engine=None
+    ):
+
 
         analysis = self.analyze(code)
 
-        suggestions = []
 
 
-        for error in analysis["errors"]:
-
-
-            if error["type"] == "SyntaxError":
-
-                suggestions.append(
-                    "Check syntax near line "
-                    + str(error.get("line"))
-                )
-
-
-            if error["type"] == "IndentationWarning":
-
-                suggestions.append(
-                    "Fix indentation"
-                )
-
-
-        return {
-
-            "analysis": analysis,
-
-            "suggestions": suggestions
-
-        }
-
-
-
-    def fix(self, code):
-
-        analysis = self.analyze(code)
-
+        # الكود صحيح
 
         if analysis["valid"]:
 
@@ -219,18 +215,98 @@ class CodeAgent:
             }
 
 
+
+
+        # إرسال إلى Qwen
+
+        if engine:
+
+
+            return self.repair(
+                code,
+                analysis,
+                engine
+            )
+
+
+
+
         return {
 
             "status":
             "Needs AI repair",
 
             "analysis":
-            analysis,
-
-            "instruction":
-            "Send to NEURA reasoning engine"
+            analysis
 
         }
+
+
+
+
+
+
+
+
+    def repair(
+        self,
+        code,
+        analysis,
+        engine
+    ):
+
+
+        prompt = f"""
+
+You are NEURA Code Repair Agent.
+
+Fix this programming code.
+
+Language:
+{analysis['language']}
+
+
+Detected errors:
+
+{analysis['errors']}
+
+
+Code:
+
+{code}
+
+
+Return JSON:
+
+{{
+"fixed_code":"",
+"explanation":""
+}}
+
+"""
+
+
+        response = engine.generate(
+            prompt
+        )
+
+
+        return {
+
+            "status":
+            "repaired",
+
+            "result":
+            response,
+
+            "analysis":
+            analysis
+
+        }
+
+
+
+
 
 
 
@@ -240,7 +316,7 @@ if __name__ == "__main__":
     agent = CodeAgent()
 
 
-    test = """
+    broken_code = """
 
 def hello():
 print("Hi")
@@ -249,5 +325,7 @@ print("Hi")
 
 
     print(
-        agent.fix(test)
+        agent.fix(
+            broken_code
+        )
     )
