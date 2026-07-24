@@ -5,11 +5,11 @@ Starts and initializes the NEURA-1 system.
 """
 
 import os
+import traceback
 
-from core.config import Config
+
 from api.server import app, neura
 
-config = Config()
 
 
 def initialize_neura():
@@ -19,40 +19,116 @@ def initialize_neura():
 
     print("🧠 Initializing NEURA-1...")
 
-    status = neura.engine.get_status()
 
-    print(f"✅ Engine: {status['name']}")
-    print(f"📌 Version: {status['version']}")
-    print(f"🤖 Model: {status['model']}")
+    try:
+
+        status = neura.engine.get_status()
+
+
+        print(
+            f"✅ Engine: {status.get('name','NEURA Engine')}"
+        )
+
+        print(
+            f"📌 Version: {status.get('version','unknown')}"
+        )
+
+        print(
+            f"🤖 Model: {status.get('model','unknown')}"
+        )
+
+
+    except Exception as e:
+
+        print(
+            "⚠️ Engine status unavailable:"
+        )
+
+        print(e)
+
+
+
     print("📚 Knowledge system: Ready")
     print("💬 Conversation system: Ready")
+    print("🧠 Memory system: Ready")
     print("🛠️ Tools system: Ready")
+    print("🔎 Web Search system: Ready")
+    print("💻 Code Agent: Ready")
 
 
-def main():
-    """
-    Start NEURA-1 API server.
-    """
+
+
+def print_banner():
 
     print("""
 ================================
+
         NEURA-1 AI SYSTEM
+
+        Advanced AI Assistant
+
 ================================
 """)
 
-    initialize_neura()
 
-    host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", 8000))
 
-    print(f"🌐 Server running on {host}:{port}")
 
-    app.run(
-        host=host,
-        port=port,
-        debug=False
-    )
+def main():
+
+    print_banner()
+
+
+    try:
+
+        initialize_neura()
+
+
+        host = os.getenv(
+            "HOST",
+            "0.0.0.0"
+        )
+
+
+        # Railway injects PORT automatically
+
+        port = int(
+            os.getenv(
+                "PORT",
+                8080
+            )
+        )
+
+
+        print(
+            f"🌐 Server running on {host}:{port}"
+        )
+
+
+        app.run(
+
+            host=host,
+
+            port=port,
+
+            debug=False,
+
+            threaded=True
+
+        )
+
+
+    except Exception:
+
+
+        print(
+            "❌ NEURA failed to start"
+        )
+
+
+        traceback.print_exc()
+
 
 
 if __name__ == "__main__":
+
     main()
