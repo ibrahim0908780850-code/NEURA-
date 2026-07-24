@@ -1,5 +1,5 @@
 """
-NEURA-1 Core Engine
+NEURA-1 Core Engine v0.8
 
 Main intelligence layer.
 
@@ -33,19 +33,27 @@ class NEURAEngine:
         self.config = Config()
 
         self.name = "NEURA-1"
-        self.version = "0.7.0"
+
+        self.version = "0.8.0"
 
 
+
+        # =====================
         # AI Model
+        # =====================
 
         self.model_loader = ModelLoader()
 
         self.model = None
+
         self.inference = None
 
 
 
-        # Systems
+
+        # =====================
+        # Core Systems
+        # =====================
 
         self.memory = MemorySystem()
 
@@ -55,16 +63,22 @@ class NEURAEngine:
 
 
 
+        # =====================
         # Agents
+        # =====================
 
         self.code_agent = CodeAgent()
 
 
 
+        # Router
+
         self.router = ToolRouter(
             self.tools,
-            self.code_agent
+            self.code_agent,
+            self
         )
+
 
 
 
@@ -73,25 +87,38 @@ class NEURAEngine:
         )
 
 
+
         self.knowledge.add_knowledge(
             "NEURA-1",
             """
 NEURA-1 is an Arabic-first AI system.
-It supports memory, tools, web search,
+Supports memory, tools, web search,
 knowledge retrieval and coding assistance.
 """
         )
 
 
 
+
+
+    # =====================
+    # Model Loading
+    # =====================
+
+
     def load_model(self):
+
 
         if self.inference:
 
+
             return {
+
                 "status":
-                    "already loaded"
+                "already loaded"
+
             }
+
 
 
 
@@ -105,16 +132,26 @@ knowledge retrieval and coding assistance.
         )
 
 
+
         return {
 
+
             "status":
-                "model connected",
+            "model connected",
+
 
             "model":
-                self.model_loader.model_name
+            self.model_loader.model_name
 
         }
 
+
+
+
+
+    # =====================
+    # Message Processing
+    # =====================
 
 
     def process_message(
@@ -131,8 +168,6 @@ knowledge retrieval and coding assistance.
 
 
 
-        # Memory
-
         self.memory.save_memory(
             user_id,
             message
@@ -140,35 +175,38 @@ knowledge retrieval and coding assistance.
 
 
 
-        # Tool Routing
 
-        tool_result = (
-            self.router.execute(
-                message
-            )
+        # Tool Router
+
+        tool_result = self.router.execute(
+            message
         )
+
 
 
         if tool_result.get(
             "tool"
         ) != "model":
 
+
             return {
 
                 "response":
-                    tool_result,
+                tool_result,
 
                 "user_id":
-                    user_id,
+                user_id,
 
                 "timestamp":
-                    timestamp
+                timestamp
 
             }
 
 
 
-        # Knowledge Retrieval
+
+
+        # Knowledge
 
         knowledge_results = (
             self.knowledge.search(
@@ -177,15 +215,23 @@ knowledge retrieval and coding assistance.
         )
 
 
+
         context = ""
+
 
 
         if knowledge_results:
 
+
             context = "\n".join(
-                x["content"]
-                for x in knowledge_results
+
+                item["content"]
+
+                for item in knowledge_results
+
             )
+
+
 
 
 
@@ -193,7 +239,9 @@ knowledge retrieval and coding assistance.
 
 
 
+
         if history:
+
 
             prompt = f"""
 
@@ -210,11 +258,13 @@ User:
 
 
 
+
         if context:
+
 
             prompt += f"""
 
-Relevant knowledge:
+Knowledge:
 
 {context}
 
@@ -222,15 +272,19 @@ Relevant knowledge:
 
 
 
-        # Load model
+
 
         if not self.inference:
+
 
             self.load_model()
 
 
 
+
+
         try:
+
 
             response = (
                 self.inference.generate(
@@ -239,34 +293,49 @@ Relevant knowledge:
             )
 
 
+
         except Exception as e:
 
 
             response = {
 
+
                 "error":
-                    str(e),
+                str(e),
+
 
                 "fallback":
-                    "NEURA model unavailable."
+                "NEURA model unavailable"
 
             }
 
 
 
+
+
         return {
 
+
             "response":
-                response,
+            response,
+
 
             "user_id":
-                user_id,
+            user_id,
+
 
             "timestamp":
-                timestamp
+            timestamp
 
         }
 
+
+
+
+
+    # =====================
+    # Code Repair
+    # =====================
 
 
     def code_repair(
@@ -274,59 +343,101 @@ Relevant knowledge:
         code
     ):
 
+
+
         if not self.inference:
 
             self.load_model()
 
 
-        return self.code_agent.repair(
+
+
+        return self.code_agent.fix(
+
             code,
-            self.inference
+
+            self
+
         )
 
 
 
+
+
+    # =====================
+    # Generate for Agents
+    # =====================
+
+
+    def generate(
+        self,
+        prompt
+    ):
+
+
+        if not self.inference:
+
+            self.load_model()
+
+
+
+        return self.inference.generate(
+            prompt
+        )
+
+
+
+
+
+
+    # =====================
+    # Status
+    # =====================
+
+
     def get_status(self):
+
 
         return {
 
+
             "name":
-                self.name,
+            self.name,
 
 
             "version":
-                self.version,
+            self.version,
 
 
             "model":
-                self.model_loader.model_name,
+            self.model_loader.model_name,
 
 
             "model_loaded":
-                self.model is not None,
+            self.model is not None,
 
 
             "inference_ready":
-                self.inference is not None,
+            self.inference is not None,
 
 
             "tools":
-                self.tools.available_tools(),
+            self.tools.available_tools(),
 
 
             "memory_ready":
-                True,
+            True,
 
 
             "knowledge_ready":
-                True,
+            True,
 
 
             "code_agent_ready":
-                True,
+            True,
 
 
             "router_ready":
-                True
+            True
 
         }
