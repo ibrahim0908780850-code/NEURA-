@@ -8,9 +8,7 @@ based on user request.
 import re
 
 
-
 class ToolRouter:
-
 
     def __init__(
         self,
@@ -20,13 +18,8 @@ class ToolRouter:
     ):
 
         self.tools = tools
-
         self.code_agent = code_agent
-
         self.engine = engine
-
-
-
 
 
     def extract_code(
@@ -38,20 +31,13 @@ class ToolRouter:
         Extract code blocks from user message.
         """
 
-
         if "```" in text:
-
 
             parts = text.split("```")
 
-
             if len(parts) >= 2:
 
-
-                code = parts[1]
-
-
-                # إزالة اسم اللغة من بداية البلوك
+                code = parts[1].strip()
 
                 if code.startswith("python"):
 
@@ -61,15 +47,10 @@ class ToolRouter:
                         1
                     )
 
-
                 return code.strip()
 
 
-
         return text
-
-
-
 
 
 
@@ -78,27 +59,17 @@ class ToolRouter:
         message
     ):
 
-
         text = message.lower()
-
-
-
 
 
         # Calculator
 
         if re.search(
-
             r"\d+\s*(\+|\-|\*|\/|ضرب|قسمة|جمع|طرح)\s*\d+",
-
             text
-
         ):
 
             return "calculator"
-
-
-
 
 
 
@@ -118,19 +89,12 @@ class ToolRouter:
         ]
 
 
-
         if any(
-
             word.lower() in text
-
             for word in search_words
-
         ):
 
             return "web_search"
-
-
-
 
 
 
@@ -155,46 +119,28 @@ class ToolRouter:
         ]
 
 
-
         if any(
-
             word.lower() in text
-
             for word in code_words
-
         ):
 
             return "code_agent"
 
 
 
-
-
-
         # Time
 
         if (
-
             "وقت" in text
-
             or "الساعة" in text
-
             or "time" in text
-
         ):
 
             return "current_time"
 
 
 
-
-
-
         return "model"
-
-
-
-
 
 
 
@@ -203,37 +149,21 @@ class ToolRouter:
         message
     ):
 
-
-        tool = self.choose_tool(
-            message
-        )
+        tool = self.choose_tool(message)
 
 
 
-
-
-        # AI Model
+        # Send to AI Model
 
         if tool == "model":
 
-
             return {
 
+                "tool": "model",
 
-                "tool":
-
-                "model",
-
-
-                "action":
-
-                "send_to_ai"
+                "action": "send_to_ai"
 
             }
-
-
-
-
 
 
 
@@ -242,9 +172,7 @@ class ToolRouter:
         if tool == "code_agent":
 
 
-
             if self.code_agent:
-
 
 
                 code = self.extract_code(
@@ -252,40 +180,24 @@ class ToolRouter:
                 )
 
 
-
                 result = self.code_agent.fix(
-
-                    code,
-
-                    self.engine
-
+                    code
                 )
-
 
 
                 return {
 
+                    "tool": "code_agent",
 
-                    "tool":
-
-                    "code_agent",
-
-
-                    "result":
-
-                    result
+                    "result": result
 
                 }
 
 
 
-
-
             return {
 
-
                 "error":
-
                 "Code agent not connected"
 
             }
@@ -293,54 +205,33 @@ class ToolRouter:
 
 
 
-
-
-
-        # Other Tools
+        # External Tools
 
         if (
-
             self.tools
-
             and tool in self.tools.tools
-
         ):
 
-
             return self.tools.run_tool(
-
                 tool,
-
                 message
-
             )
-
-
-
 
 
 
         return {
 
-
             "error":
-
             f"Tool '{tool}' unavailable"
 
         }
 
 
 
-
-
-
-
 if __name__ == "__main__":
 
 
-    router = ToolRouter(
-        None
-    )
+    router = ToolRouter(None)
 
 
     print(
@@ -359,9 +250,6 @@ if __name__ == "__main__":
 
     print(
         router.choose_tool(
-            """
-اصلح هذا الكود:
-
-```python
-def hello():
-print("Hi")
+            "اصلح هذا الكود"
+        )
+    )
