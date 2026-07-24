@@ -1,7 +1,7 @@
 """
 NEURA-1 Code Agent
 
-Analyzes, explains and assists
+Analyzes, explains, fixes and assists
 with programming code.
 """
 
@@ -9,6 +9,12 @@ import ast
 
 
 class CodeAgent:
+
+
+    def __init__(self):
+
+        self.name = "NEURA Code Agent"
+
 
 
     def analyze(self, code):
@@ -29,17 +35,13 @@ class CodeAgent:
 
                 errors.append({
 
-                    "type":
-                        "SyntaxError",
+                    "type": "SyntaxError",
 
-                    "message":
-                        e.msg,
+                    "message": e.msg,
 
-                    "line":
-                        e.lineno,
+                    "line": e.lineno,
 
-                    "offset":
-                        e.offset
+                    "offset": e.offset
 
                 })
 
@@ -57,7 +59,21 @@ class CodeAgent:
                 })
 
 
+        issues = self.detect_issues(
+            code,
+            language
+        )
+
+
+        errors.extend(
+            issues
+        )
+
+
         return {
+
+            "agent":
+                self.name,
 
             "language":
                 language,
@@ -126,6 +142,47 @@ class CodeAgent:
 
 
 
+    def detect_issues(
+        self,
+        code,
+        language
+    ):
+
+        issues = []
+
+
+        if language == "Python":
+
+            if "print " in code:
+
+                issues.append({
+
+                    "type":
+                        "StyleWarning",
+
+                    "message":
+                        "Python 3 uses print() instead of print statement."
+
+                })
+
+
+            if "\t" in code:
+
+                issues.append({
+
+                    "type":
+                        "IndentationWarning",
+
+                    "message":
+                        "Mixed tabs and spaces detected."
+
+                })
+
+
+        return issues
+
+
+
     def explain(self, code):
 
         analysis = self.analyze(code)
@@ -147,8 +204,11 @@ class CodeAgent:
             "valid":
                 analysis["valid"],
 
+            "errors":
+                analysis["errors"],
+
             "explanation":
-                "NEURA Code Agent analyzed the code structure and syntax."
+                "NEURA Code Agent analyzed syntax, structure and possible issues."
 
         }
 
@@ -163,19 +223,27 @@ class CodeAgent:
 
         for error in analysis["errors"]:
 
-            if error["type"] == "SyntaxError":
+            error_type = error["type"]
+
+
+            if error_type == "SyntaxError":
 
                 suggestions.append(
-                    "Review indentation, brackets, quotes and missing syntax."
+                    "Fix syntax near the reported line."
                 )
 
 
-        if analysis["language"] == "Python":
-
-            if "print " in code:
+            elif error_type == "IndentationWarning":
 
                 suggestions.append(
-                    "Use print() function in Python 3."
+                    "Use consistent indentation."
+                )
+
+
+            elif error_type == "StyleWarning":
+
+                suggestions.append(
+                    "Update old syntax to modern Python style."
                 )
 
 
@@ -191,7 +259,10 @@ class CodeAgent:
 
 
 
-    def fix(self, code):
+    def fix(
+        self,
+        code
+    ):
 
         analysis = self.analyze(code)
 
@@ -203,11 +274,11 @@ class CodeAgent:
                 "status":
                     "Code is valid",
 
-                "language":
-                    analysis["language"],
-
                 "code":
-                    code
+                    code,
+
+                "analysis":
+                    analysis
 
             }
 
@@ -222,6 +293,72 @@ class CodeAgent:
 
             "instruction":
                 "Send code and errors to NEURA reasoning engine."
+
+        }
+
+
+
+    def repair(
+        self,
+        code,
+        engine
+    ):
+
+        analysis = self.analyze(code)
+
+
+        if analysis["valid"]:
+
+            return {
+
+                "status":
+                    "No repair needed",
+
+                "code":
+                    code
+
+            }
+
+
+        prompt = f"""
+
+You are NEURA Code Repair Agent.
+
+Repair this code.
+
+Language:
+{analysis['language']}
+
+Errors:
+{analysis['errors']}
+
+Code:
+
+{code}
+
+
+Return:
+- Fixed code
+- Explanation
+
+"""
+
+
+        response = engine.generate(
+            prompt
+        )
+
+
+        return {
+
+            "status":
+                "repaired",
+
+            "result":
+                response,
+
+            "analysis":
+                analysis
 
         }
 
