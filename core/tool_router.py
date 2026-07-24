@@ -49,11 +49,6 @@ class ToolRouter:
         text = message.lower()
 
 
-
-        # =====================
-        # Calculator
-        # =====================
-
         if re.search(
             r"\d+\s*(\+|\-|\*|\/|ضرب|قسمة|جمع|طرح)\s*\d+",
             text
@@ -62,10 +57,6 @@ class ToolRouter:
             return "calculator"
 
 
-
-        # =====================
-        # Web Search
-        # =====================
 
         search_words = [
 
@@ -89,10 +80,6 @@ class ToolRouter:
             return "web_search"
 
 
-
-        # =====================
-        # Programming
-        # =====================
 
         code_words = [
 
@@ -120,10 +107,6 @@ class ToolRouter:
 
 
 
-        # =====================
-        # Time
-        # =====================
-
         if (
             "وقت" in text
             or "الساعة" in text
@@ -134,10 +117,6 @@ class ToolRouter:
 
 
 
-        # =====================
-        # Default AI Model
-        # =====================
-
         return "model"
 
 
@@ -147,41 +126,23 @@ class ToolRouter:
         message
     ):
 
+        tool = self.choose_tool(message)
 
-        tool = self.choose_tool(
-            message
-        )
-
-
-
-        # Send to AI model
 
         if tool == "model":
 
             return {
-
-                "tool":
-                    "model",
-
-                "action":
-                    "send_to_ai"
-
+                "tool": "model",
+                "action": "send_to_ai"
             }
 
 
 
-        # Code Agent
-
         if tool == "code_agent":
-
 
             if self.code_agent:
 
-
-                code = self.extract_code(
-                    message
-                )
-
+                code = self.extract_code(message)
 
                 return {
 
@@ -189,12 +150,9 @@ class ToolRouter:
                         "code_agent",
 
                     "result":
-                        self.code_agent.fix(
-                            code
-                        )
+                        self.code_agent.fix(code)
 
                 }
-
 
 
             return {
@@ -205,9 +163,6 @@ class ToolRouter:
             }
 
 
-
-
-        # External Tools
 
         if (
             self.tools
@@ -230,13 +185,10 @@ class ToolRouter:
 
 
 
-
 if __name__ == "__main__":
 
 
-    router = ToolRouter(
-        None
-    )
+    router = ToolRouter(None)
 
 
     print(
@@ -255,8 +207,6 @@ if __name__ == "__main__":
 
     print(
         router.choose_tool(
-            """
-اصلح هذا الكود:
-
-```python
-print("hello")
+            "اصلح هذا الكود"
+        )
+    )
