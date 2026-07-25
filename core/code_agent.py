@@ -1,23 +1,34 @@
 """
-NEURA-1 Code Agent v0.8
+NEURA-1 Code Agent v0.9
 
-Analyzes, explains, fixes and repairs code
-using NEURA reasoning engine.
+Advanced coding assistant.
+
+Features:
+- Code analysis
+- Bug detection
+- Explanation
+- AI repair
+- Multi-language detection
 """
 
 import ast
 import json
+import re
 
 
 class CodeAgent:
+
 
     def __init__(self):
 
         self.name = "NEURA Code Agent"
 
+        self.version = "0.9.0"
+
+
 
     # ====================================
-    # Analyze Code
+    # Analyze
     # ====================================
 
     def analyze(
@@ -27,10 +38,14 @@ class CodeAgent:
 
         errors = []
 
+        suggestions = []
+
         language = self.detect_language(
             code
         )
 
+
+        # Python syntax check
 
         if language == "Python":
 
@@ -43,43 +58,72 @@ class CodeAgent:
 
                 errors.append({
 
-                    "type": "SyntaxError",
+                    "type":
+                    "SyntaxError",
 
-                    "message": e.msg,
+                    "message":
+                    e.msg,
 
-                    "line": e.lineno,
+                    "line":
+                    e.lineno,
 
-                    "offset": e.offset
+                    "offset":
+                    e.offset
 
                 })
 
 
-        errors.extend(
+        issues = self.detect_issues(
+            code,
+            language
+        )
 
-            self.detect_issues(
+
+        errors.extend(
+            issues
+        )
+
+
+        suggestions.extend(
+            self.generate_suggestions(
                 code,
                 language
             )
-
         )
 
 
         return {
 
-            "agent": self.name,
 
-            "language": language,
+            "agent":
+            self.name,
 
-            "valid": len(errors) == 0,
 
-            "errors": errors
+            "version":
+            self.version,
+
+
+            "language":
+            language,
+
+
+            "valid":
+            len(errors) == 0,
+
+
+            "errors":
+            errors,
+
+
+            "suggestions":
+            suggestions
 
         }
 
 
 
     # ====================================
-    # Detect Programming Language
+    # Detect Language
     # ====================================
 
     def detect_language(
@@ -87,71 +131,65 @@ class CodeAgent:
         code
     ):
 
+
         indicators = {
 
-            "Python": [
 
+            "Python":
+
+            [
                 "import ",
-
                 "from ",
-
                 "def ",
-
                 "class ",
-
                 "print("
-
             ],
 
 
-            "JavaScript": [
 
+            "JavaScript":
+
+            [
                 "function ",
-
                 "console.log",
-
                 "const ",
-
                 "let ",
-
                 "=>"
-
             ],
 
 
-            "HTML": [
 
+            "HTML":
+
+            [
                 "<html",
-
                 "<body",
-
                 "<div"
-
             ],
 
 
-            "SQL": [
 
+            "SQL":
+
+            [
                 "SELECT ",
-
                 "INSERT ",
-
                 "UPDATE ",
-
                 "DELETE "
-
             ]
 
         }
 
 
-        for language, keys in indicators.items():
 
-            for key in keys:
+        for language, patterns in indicators.items():
 
-                if key in code:
+            for pattern in patterns:
+
+                if pattern.lower() in code.lower():
 
                     return language
+
 
 
         return "Unknown"
@@ -159,7 +197,7 @@ class CodeAgent:
 
 
     # ====================================
-    # Detect Common Problems
+    # Detect Problems
     # ====================================
 
     def detect_issues(
@@ -168,7 +206,9 @@ class CodeAgent:
         language
     ):
 
+
         issues = []
+
 
 
         if language == "Python":
@@ -178,12 +218,14 @@ class CodeAgent:
 
                 issues.append({
 
-                    "type": "StyleWarning",
+                    "type":
+                    "StyleWarning",
 
                     "message":
-                    "Use print() in Python 3"
+                    "Use print() instead of print statement"
 
                 })
+
 
 
             if "\t" in code:
@@ -194,12 +236,16 @@ class CodeAgent:
                     "IndentationWarning",
 
                     "message":
-                    "Tabs detected, use spaces"
+                    "Tabs detected, replace with spaces"
 
                 })
 
 
-            if "if " in code and "=" in code:
+
+            if re.search(
+                r"\bif .*=",
+                code
+            ):
 
                 issues.append({
 
@@ -207,9 +253,27 @@ class CodeAgent:
                     "PossibleBug",
 
                     "message":
-                    "Check assignment vs comparison"
+                    "Possible assignment instead of comparison"
 
                 })
+
+
+
+        if language == "JavaScript":
+
+
+            if "var " in code:
+
+                issues.append({
+
+                    "type":
+                    "StyleWarning",
+
+                    "message":
+                    "Use let or const instead of var"
+
+                })
+
 
 
         return issues
@@ -217,7 +281,39 @@ class CodeAgent:
 
 
     # ====================================
-    # Explain Code
+    # Suggestions
+    # ====================================
+
+    def generate_suggestions(
+        self,
+        code,
+        language
+    ):
+
+
+        suggestions = []
+
+
+        if language == "Python":
+
+            suggestions.append(
+                "Follow PEP8 formatting"
+            )
+
+
+        if language == "JavaScript":
+
+            suggestions.append(
+                "Use modern ES6 syntax"
+            )
+
+
+        return suggestions
+
+
+
+    # ====================================
+    # Explain
     # ====================================
 
     def explain(
@@ -225,18 +321,16 @@ class CodeAgent:
         code
     ):
 
-        analysis = self.analyze(
-            code
-        )
-
 
         return {
 
             "analysis":
-            analysis,
+            self.analyze(code),
+
 
             "lines":
             len(code.splitlines()),
+
 
             "characters":
             len(code)
@@ -246,7 +340,7 @@ class CodeAgent:
 
 
     # ====================================
-    # Fix Code
+    # Fix
     # ====================================
 
     def fix(
@@ -254,6 +348,7 @@ class CodeAgent:
         code,
         engine=None
     ):
+
 
         analysis = self.analyze(
             code
@@ -265,7 +360,7 @@ class CodeAgent:
             return {
 
                 "status":
-                "Code is valid",
+                "valid",
 
                 "code":
                 code,
@@ -280,13 +375,9 @@ class CodeAgent:
         if engine:
 
             return self.repair(
-
                 code,
-
                 analysis,
-
                 engine
-
             )
 
 
@@ -294,7 +385,7 @@ class CodeAgent:
         return {
 
             "status":
-            "Needs AI repair",
+            "needs_repair",
 
             "analysis":
             analysis
@@ -314,34 +405,39 @@ class CodeAgent:
         engine
     ):
 
+
         prompt = f"""
 
-You are NEURA Code Repair Agent.
+You are NEURA-1 Code Repair Agent.
 
-Fix this code.
+Repair the code.
 
 Language:
 {analysis['language']}
 
+
 Errors:
 {analysis['errors']}
+
 
 Code:
 
 {code}
 
 
-Return only JSON:
+Return ONLY JSON:
 
 {{
 "fixed_code":"",
-"explanation":""
+"explanation":"",
+"changes":[]
 }}
 
 """
 
 
         try:
+
 
             response = engine.generate(
                 prompt
@@ -350,21 +446,33 @@ Return only JSON:
 
             if isinstance(response, str):
 
+
+                cleaned = (
+                    response
+                    .replace("```json","")
+                    .replace("```","")
+                    .strip()
+                )
+
+
                 try:
 
                     response = json.loads(
-                        response
+                        cleaned
                     )
 
+
                 except Exception:
+
 
                     response = {
 
                         "fixed_code":
                         response,
 
+
                         "explanation":
-                        "AI returned text response"
+                        "AI returned non JSON output"
 
                     }
 
@@ -372,11 +480,14 @@ Return only JSON:
 
             return {
 
+
                 "status":
                 "repaired",
 
+
                 "result":
                 response,
+
 
                 "analysis":
                 analysis
@@ -384,19 +495,20 @@ Return only JSON:
             }
 
 
+
         except Exception as e:
 
 
             return {
 
+
                 "status":
                 "failed",
+
 
                 "error":
                 str(e),
 
-                "original_code":
-                code,
 
                 "analysis":
                 analysis
@@ -408,6 +520,7 @@ Return only JSON:
 # ====================================
 # Test
 # ====================================
+
 
 if __name__ == "__main__":
 
@@ -423,10 +536,15 @@ print("Hi")
 """
 
 
+    result = agent.fix(
+        broken_code
+    )
+
+
     print(
-
-        agent.fix(
-            broken_code
+        json.dumps(
+            result,
+            indent=4,
+            ensure_ascii=False
         )
-
     )
