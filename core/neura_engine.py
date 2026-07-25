@@ -1,5 +1,5 @@
 """
-NEURA-1 Core Engine v0.9
+NEURA-1 Core Engine v0.9.1
 
 Main intelligence layer.
 
@@ -27,6 +27,7 @@ from core.code_agent import CodeAgent
 
 
 
+
 class NEURAEngine:
 
 
@@ -36,11 +37,13 @@ class NEURAEngine:
 
         self.name = "NEURA-1"
 
-        self.version = "0.9.0"
+        self.version = "0.9.1"
 
 
 
+        # ======================
         # AI MODEL
+        # ======================
 
         self.model_loader = ModelLoader()
 
@@ -50,23 +53,37 @@ class NEURAEngine:
 
 
 
+        # ======================
         # CORE SYSTEMS
+        # ======================
 
         self.memory = MemorySystem()
 
         self.knowledge = KnowledgeBase()
 
-        self.tools = ToolsSystem()
 
 
-
+        # ======================
         # AGENTS
+        # ======================
 
         self.code_agent = CodeAgent()
 
 
 
+        # ======================
+        # TOOLS
+        # ======================
+
+        self.tools = ToolsSystem(
+            engine=self
+        )
+
+
+
+        # ======================
         # ROUTER
+        # ======================
 
         self.router = ToolRouter(
 
@@ -98,7 +115,8 @@ Capabilities:
 - Arabic conversation
 - Memory
 - Knowledge retrieval
-- Tool usage
+- Tool calling
+- Web search
 - Code analysis
 - Code repair
 - AI reasoning
@@ -110,9 +128,9 @@ Capabilities:
 
 
 
-    # ==============================
-    # MODEL
-    # ==============================
+    # ======================
+    # MODEL LOADING
+    # ======================
 
 
     def load_model(self):
@@ -124,9 +142,13 @@ Capabilities:
             return {
 
                 "status":
-                "already_loaded"
+                "already_loaded",
+
+                "model":
+                self.model_loader.model_name
 
             }
+
 
 
 
@@ -143,6 +165,7 @@ Capabilities:
             )
 
 
+
             return {
 
                 "status":
@@ -152,6 +175,7 @@ Capabilities:
                 self.model_loader.model_name
 
             }
+
 
 
 
@@ -172,9 +196,9 @@ Capabilities:
 
 
 
-    # ==============================
-    # GENERATION
-    # ==============================
+    # ======================
+    # AI GENERATION
+    # ======================
 
 
     def generate(
@@ -187,30 +211,46 @@ Capabilities:
         if not self.inference:
 
 
-            status = self.load_model()
+            result = self.load_model()
 
 
-            if status["status"] == "failed":
+            if result["status"] == "failed":
 
-                return status
-
-
-
-        return self.inference.generate(
-
-            prompt,
-
-            history=history
-
-        )
+                return result
 
 
 
 
+        try:
 
-    # ==============================
+
+            return self.inference.generate(
+
+                prompt,
+
+                history=history
+
+            )
+
+
+
+        except Exception as e:
+
+
+            return {
+
+                "error":
+                str(e)
+
+            }
+
+
+
+
+
+    # ======================
     # MESSAGE PROCESSING
-    # ==============================
+    # ======================
 
 
     def process_message(
@@ -226,12 +266,13 @@ Capabilities:
     ):
 
 
-
         timestamp = datetime.now(
             timezone.utc
         ).isoformat()
 
 
+
+        # Memory
 
         try:
 
@@ -243,28 +284,36 @@ Capabilities:
 
             )
 
-        except:
+
+        except Exception:
 
             pass
 
 
 
 
+        # Tools Router
+
         tool_result = self.router.execute(
-
             message
-
         )
 
 
 
-        if tool_result.get("tool") != "model":
+        if tool_result.get(
+            "tool"
+        ) != "model":
 
 
             return {
 
                 "response":
                 tool_result,
+
+
+                "user_id":
+                user_id,
+
 
                 "timestamp":
                 timestamp
@@ -275,17 +324,15 @@ Capabilities:
 
 
 
+        # Knowledge
+
         context = ""
-
-
 
         try:
 
 
             results = self.knowledge.search(
-
                 message
-
             )
 
 
@@ -294,18 +341,23 @@ Capabilities:
 
                 context = "\n".join(
 
-                    x["content"]
+                    item["content"]
 
-                    for x in results
+                    for item in results
 
                 )
 
 
 
-        except:
+        except Exception:
 
             pass
 
+
+
+
+
+        history_text = history or "No previous conversation"
 
 
 
@@ -314,11 +366,18 @@ Capabilities:
 
 You are NEURA-1.
 
-Answer in Arabic.
+You are an advanced Arabic AI assistant.
+
+Rules:
+
+- Answer mainly in Arabic.
+- Be accurate.
+- Explain clearly.
+
 
 Conversation:
 
-{history}
+{history_text}
 
 
 Knowledge:
@@ -334,6 +393,8 @@ User:
 Assistant:
 
 """
+
+
 
 
 
@@ -367,27 +428,15 @@ Assistant:
 
 
 
-
-
-    # ==============================
+    # ======================
     # CODE REPAIR
-    # ==============================
+    # ======================
 
 
     def code_repair(
-
         self,
-
         code
-
     ):
-
-
-        if not self.inference:
-
-
-            self.load_model()
-
 
 
         return self.code_agent.fix(
@@ -402,11 +451,9 @@ Assistant:
 
 
 
-
-
-    # ==============================
+    # ======================
     # STATUS
-    # ==============================
+    # ======================
 
 
     def get_status(self):
@@ -427,19 +474,19 @@ Assistant:
             self.model_loader.model_name,
 
 
-            "loaded":
+            "model_loaded":
             self.model is not None,
 
 
-            "inference":
+            "inference_ready":
             self.inference is not None,
 
 
-            "memory":
+            "memory_ready":
             True,
 
 
-            "knowledge":
+            "knowledge_ready":
             True,
 
 
@@ -447,12 +494,16 @@ Assistant:
             self.tools.available_tools(),
 
 
-            "router":
+            "router_ready":
             True,
 
 
-            "code_agent":
-            True
+            "code_agent_ready":
+            True,
+
+
+            "created":
+            self.created.isoformat()
 
         }
 
@@ -460,6 +511,9 @@ Assistant:
 
 
 
+    # ======================
+    # HEALTH
+    # ======================
 
 
     def health(self):
