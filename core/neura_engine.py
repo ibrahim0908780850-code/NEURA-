@@ -2,18 +2,9 @@
 NEURA-1 Core Engine v0.8
 
 Main intelligence layer.
-
-Connects:
-- AI Model
-- Memory
-- Knowledge
-- Tools
-- Router
-- Code Agent
 """
 
 from datetime import datetime, timezone
-
 
 from core.config import Config
 from core.model_loader import ModelLoader
@@ -24,135 +15,117 @@ from core.tool_router import ToolRouter
 from core.code_agent import CodeAgent
 
 
-
 class NEURAEngine:
-
 
     def __init__(self):
 
         self.config = Config()
 
         self.name = "NEURA-1"
-
         self.version = "0.8.0"
 
-
-
-        # =====================
+        # ======================
         # AI Model
-        # =====================
+        # ======================
 
         self.model_loader = ModelLoader()
-
         self.model = None
-
         self.inference = None
 
-
-
-
-        # =====================
+        # ======================
         # Core Systems
-        # =====================
+        # ======================
 
         self.memory = MemorySystem()
-
         self.knowledge = KnowledgeBase()
-
         self.tools = ToolsSystem()
 
-
-
-        # =====================
+        # ======================
         # Agents
-        # =====================
+        # ======================
 
         self.code_agent = CodeAgent()
 
-
-
-        # Router
-
         self.router = ToolRouter(
-            self.tools,
-            self.code_agent,
-            self
+            tools=self.tools,
+            code_agent=self.code_agent,
+            engine=self
         )
-
-
-
 
         self.created = datetime.now(
             timezone.utc
         )
 
-
-
         self.knowledge.add_knowledge(
             "NEURA-1",
             """
-NEURA-1 is an Arabic-first AI system.
-Supports memory, tools, web search,
-knowledge retrieval and coding assistance.
+NEURA-1 is an Arabic-first AI assistant.
+
+Features:
+- Memory
+- Knowledge Base
+- Web Search
+- Tool Calling
+- Code Analysis
+- Code Repair
 """
         )
 
-
-
-
-
-    # =====================
+    # ====================================
     # Model Loading
-    # =====================
-
+    # ====================================
 
     def load_model(self):
 
-
-        if self.inference:
-
+        if self.inference is not None:
 
             return {
-
-                "status":
-                "already loaded"
-
+                "status": "already_loaded",
+                "model": self.model_loader.model_name
             }
 
+        try:
 
+            self.model = self.model_loader.load()
 
+            self.inference = (
+                self.model_loader.inference
+            )
 
-        self.model = (
-            self.model_loader.load()
-        )
+            return {
+                "status": "loaded",
+                "model": self.model_loader.model_name
+            }
 
+        except Exception as e:
 
-        self.inference = (
-            self.model_loader.inference
-        )
+            return {
+                "status": "failed",
+                "error": str(e)
+            }
 
+    # ====================================
+    # AI Generate
+    # ====================================
 
+    def generate(
+        self,
+        prompt
+    ):
 
-        return {
+        if self.inference is None:
 
+            result = self.load_model()
 
-            "status":
-            "model connected",
+            if result["status"] == "failed":
 
+                return result
 
-            "model":
-            self.model_loader.model_name
+        return self.inference.generate(prompt)
 
-        }
-
-
-
-
-
-    # =====================
+    # ====================================
     # Message Processing
-    # =====================
-
+    # ====================================
 
     def process_message(
         self,
@@ -161,283 +134,189 @@ knowledge retrieval and coding assistance.
         history=None
     ):
 
-
         timestamp = datetime.now(
             timezone.utc
         ).isoformat()
 
+        # حفظ الرسالة في الذاكرة
+        try:
+            self.memory.save_memory(
+                user_id,
+                message
+            )
+        except Exception:
+            pass
 
-
-        self.memory.save_memory(
-            user_id,
-            message
-        )
-
-
-
-
-        # Tool Router
-
+        # تشغيل الـ Router
         tool_result = self.router.execute(
             message
         )
 
-
-
-        if tool_result.get(
-            "tool"
-        ) != "model":
-
+        # إذا كانت الأداة ليست النموذج
+        if tool_result.get("tool") != "model":
 
             return {
-
-                "response":
-                tool_result,
-
-                "user_id":
-                user_id,
-
-                "timestamp":
-                timestamp
-
+                "response": tool_result,
+                "user_id": user_id,
+                "timestamp": timestamp
             }
 
-
-
-
-
-        # Knowledge
-
-        knowledge_results = (
-            self.knowledge.search(
-                message
-            )
-        )
-
-
+        # ======================
+        # Knowledge Retrieval
+        # ======================
 
         context = ""
 
+        try:
 
-
-        if knowledge_results:
-
-
-            context = "\n".join(
-
-                item["content"]
-
-                for item in knowledge_results
-
+            knowledge = self.knowledge.search(
+                message
             )
 
+            if knowledge:
 
+                context = "\n".join(
+                    item["content"]
+                    for item in knowledge
+                )
 
+        except Exception:
+            pass
 
+        # ======================
+        # Build Prompt
+        # ======================
 
-        prompt = message
-
-
-
+        prompt = ""
 
         if history:
 
-
-            prompt = f"""
-
-Conversation history:
+            prompt += f"""
+Conversation History
 
 {history}
 
-
-User:
-
-{message}
-
 """
-
-
-
 
         if context:
 
-
             prompt += f"""
-
-Knowledge:
+Knowledge
 
 {context}
 
 """
 
+        prompt += f"""
+User
 
+{message}
 
+Assistant
+"""
 
+        # ======================
+        # AI Generation
+        # ======================
 
-        if not self.inference:
-
-
-            self.load_model()
-
-
-
-
-
-        try:
-
-
-            response = (
-                self.inference.generate(
-                    prompt
-                )
-            )
-
-
-
-        except Exception as e:
-
-
-            response = {
-
-
-                "error":
-                str(e),
-
-
-                "fallback":
-                "NEURA model unavailable"
-
-            }
-
-
-
-
+        response = self.generate(
+            prompt
+        )
 
         return {
 
+            "response": response,
 
-            "response":
-            response,
+            "user_id": user_id,
 
-
-            "user_id":
-            user_id,
-
-
-            "timestamp":
-            timestamp
+            "timestamp": timestamp
 
         }
-
-
-
-
-
-    # =====================
+    # ====================================
     # Code Repair
-    # =====================
-
+    # ====================================
 
     def code_repair(
         self,
         code
     ):
 
-
-
-        if not self.inference:
-
+        if self.inference is None:
             self.load_model()
-
-
-
 
         return self.code_agent.fix(
-
             code,
-
             self
-
         )
 
-
-
-
-
-    # =====================
-    # Generate for Agents
-    # =====================
-
-
-    def generate(
-        self,
-        prompt
-    ):
-
-
-        if not self.inference:
-
-            self.load_model()
-
-
-
-        return self.inference.generate(
-            prompt
-        )
-
-
-
-
-
-
-    # =====================
-    # Status
-    # =====================
-
+    # ====================================
+    # Engine Status
+    # ====================================
 
     def get_status(self):
 
+        return {
+
+            "name": self.name,
+
+            "version": self.version,
+
+            "model": self.model_loader.model_name,
+
+            "model_loaded":
+                self.model is not None,
+
+            "inference_ready":
+                self.inference is not None,
+
+            "memory_ready":
+                self.memory is not None,
+
+            "knowledge_ready":
+                self.knowledge is not None,
+
+            "tools":
+                self.tools.available_tools(),
+
+            "router_ready":
+                self.router is not None,
+
+            "code_agent_ready":
+                self.code_agent is not None,
+
+            "created":
+                self.created.isoformat()
+
+        }
+
+    # ====================================
+    # Reload Model
+    # ====================================
+
+    def reload_model(self):
+
+        self.model = None
+        self.inference = None
+
+        return self.load_model()
+
+    # ====================================
+    # Health Check
+    # ====================================
+
+    def health(self):
 
         return {
 
+            "status": "healthy",
 
-            "name":
-            self.name,
+            "engine": self.name,
 
+            "version": self.version,
 
-            "version":
-            self.version,
-
-
-            "model":
-            self.model_loader.model_name,
-
-
-            "model_loaded":
-            self.model is not None,
-
-
-            "inference_ready":
-            self.inference is not None,
-
-
-            "tools":
-            self.tools.available_tools(),
-
-
-            "memory_ready":
-            True,
-
-
-            "knowledge_ready":
-            True,
-
-
-            "code_agent_ready":
-            True,
-
-
-            "router_ready":
-            True
+            "utc_time":
+                datetime.now(
+                    timezone.utc
+                ).isoformat()
 
         }
