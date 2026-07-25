@@ -1,5 +1,5 @@
 """
-NEURA-1 Model Loader v0.9
+NEURA-1 Model Loader v0.9.1
 
 Connects NEURA-1 with external AI inference providers.
 """
@@ -8,9 +8,10 @@ from core.config import Config
 from core.inference_api import InferenceAPI
 
 
+
 class ModelLoader:
     """
-    Loads and manages the AI model connection.
+    Loads and manages AI model connection.
     """
 
 
@@ -18,6 +19,7 @@ class ModelLoader:
         self,
         model_name=None
     ):
+
 
         self.config = Config()
 
@@ -37,10 +39,14 @@ class ModelLoader:
 
         self.model = None
 
-
         self.inference = InferenceAPI(
             model_name=self.model_name
         )
+
+
+        self.status = "initialized"
+
+
 
 
 
@@ -48,45 +54,51 @@ class ModelLoader:
     # Load Model
     # =========================
 
+
     def load(self):
 
         """
-        Initialize external inference connection.
+        Initialize inference provider.
         """
 
 
-        if self.model:
+        if self.model is not None:
 
             return self.model
+
 
 
 
         print(
-            f"Connecting model: {self.model_name}"
+            f"🧠 Connecting model: {self.model_name}"
         )
+
 
 
         try:
 
+
             self.model = self.inference
 
+            self.status = "connected"
+
+
             return self.model
+
 
 
 
         except Exception as e:
 
 
-            print(
-                "Model connection failed:",
-                str(e)
+            self.status = "failed"
+
+
+            raise RuntimeError(
+                f"Model loading failed: {str(e)}"
             )
 
 
-            self.model = None
-
-
-            raise e
 
 
 
@@ -95,14 +107,13 @@ class ModelLoader:
     # Generate
     # =========================
 
+
     def generate(
         self,
-        prompt
+        prompt,
+        history=None,
+        max_tokens=512
     ):
-
-        """
-        Generate AI response.
-        """
 
 
         if self.model is None:
@@ -112,8 +123,36 @@ class ModelLoader:
 
 
         return self.model.generate(
-            prompt
+
+            prompt,
+
+            history=history,
+
+            max_tokens=max_tokens
+
         )
+
+
+
+
+
+
+    # =========================
+    # Reload
+    # =========================
+
+
+    def reload(self):
+
+
+        self.model = None
+
+        self.status = "reloading"
+
+
+        return self.load()
+
+
 
 
 
@@ -122,35 +161,31 @@ class ModelLoader:
     # Status
     # =========================
 
-    def get_status(
-        self
-    ):
 
-        """
-        Return model status.
-        """
+    def get_status(self):
 
 
         return {
 
 
             "model":
-
             self.model_name,
 
 
             "loaded":
-
             self.model is not None,
 
 
             "provider":
+            "Hugging Face Router API",
 
-            "Hugging Face / OpenRouter"
 
-
+            "status":
+            self.status
 
         }
+
+
 
 
 
@@ -158,6 +193,7 @@ class ModelLoader:
 # =========================
 # Test
 # =========================
+
 
 if __name__ == "__main__":
 
