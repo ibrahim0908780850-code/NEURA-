@@ -1,74 +1,130 @@
 """
-NEURA-1 Web Search Tool
+NEURA-1 Web Search Tool v0.9
 
-Allows NEURA-1 to search the internet.
+Allows NEURA-1 to search the internet
+using Tavily Search API.
 """
+
 
 import os
 import requests
 
+
 from core.search_cleaner import SearchCleaner
+
+
 
 
 class WebSearch:
 
+
     def __init__(self):
+
+
+        self.name = "NEURA Web Search"
+
+        self.version = "0.9.0"
+
 
         self.api_key = os.getenv(
             "TAVILY_API_KEY"
         )
+
 
         self.url = (
             "https://api.tavily.com/search"
         )
 
 
+
+    # =========================
+    # Search
+    # =========================
+
+
     def search(
         self,
         query,
-        limit=5
+        limit=5,
+        depth="advanced"
     ):
+
 
         if not self.api_key:
 
+
             return {
+
                 "success": False,
-                "error": "Web search unavailable"
+
+                "tool":
+                self.name,
+
+                "error":
+                "TAVILY_API_KEY missing"
+
             }
+
+
 
 
         payload = {
 
-            "api_key": self.api_key,
 
-            "query": query,
+            "api_key":
+            self.api_key,
 
-            "search_depth": "advanced",
 
-            "max_results": limit,
+            "query":
+            query,
 
-            "include_answer": True,
 
-            "include_raw_content": False
+            "search_depth":
+            depth,
+
+
+            "max_results":
+            limit,
+
+
+            "include_answer":
+            True,
+
+
+            "include_raw_content":
+            False
 
         }
 
 
+
+
+
         try:
 
+
             response = requests.post(
+
                 self.url,
+
                 json=payload,
+
                 timeout=30
+
             )
+
 
 
             response.raise_for_status()
 
+
+
             data = response.json()
 
 
+
             results = []
+
 
 
             for item in data.get(
@@ -76,92 +132,195 @@ class WebSearch:
                 []
             ):
 
+
+                content = item.get(
+                    "content",
+                    ""
+                )
+
+
+                try:
+
+
+                    content = SearchCleaner.clean(
+                        content
+                    )
+
+
+                except Exception:
+
+
+                    pass
+
+
+
+
                 results.append({
 
+
                     "title":
-                        item.get(
-                            "title",
-                            ""
-                        ),
+                    item.get(
+                        "title",
+                        ""
+                    ),
+
 
                     "url":
-                        item.get(
-                            "url",
-                            ""
-                        ),
+                    item.get(
+                        "url",
+                        ""
+                    ),
+
 
                     "content":
-                        SearchCleaner.clean(
-                            item.get(
-                                "content",
-                                ""
-                            )
-                        )
+                    content
+
 
                 })
 
 
+
+
+
             return {
 
-                "success": True,
+
+                "success":
+                True,
+
+
+                "tool":
+                self.name,
+
+
+                "query":
+                query,
+
 
                 "answer":
-                    data.get(
-                        "answer",
-                        ""
-                    ),
+                data.get(
+                    "answer",
+                    ""
+                ),
+
 
                 "results":
-                    results
+                results
+
 
             }
+
+
+
 
 
         except requests.exceptions.Timeout:
 
+
             return {
 
-                "success": False,
+
+                "success":
+                False,
+
 
                 "error":
-                    "Search request timeout"
+                "Search timeout"
 
             }
 
 
-        except requests.exceptions.RequestException as e:
+
+
+
+        except requests.exceptions.HTTPError as e:
+
 
             return {
 
-                "success": False,
+
+                "success":
+                False,
+
 
                 "error":
-                    str(e)
+                f"HTTP error: {str(e)}"
 
             }
+
+
+
 
 
         except Exception as e:
 
+
             return {
 
-                "success": False,
+
+                "success":
+                False,
+
 
                 "error":
-                    f"Unexpected error: {str(e)}"
+                str(e)
 
             }
 
 
 
+
+
+    # =========================
+    # Status
+    # =========================
+
+
+    def get_status(self):
+
+
+        return {
+
+
+            "tool":
+            self.name,
+
+
+            "version":
+            self.version,
+
+
+            "connected":
+            bool(
+                self.api_key
+            )
+
+        }
+
+
+
+
+
+# =========================
+# Test
+# =========================
+
+
 if __name__ == "__main__":
+
 
     web = WebSearch()
 
 
-    result = web.search(
-        "آخر أخبار الذكاء الاصطناعي"
+    print(
+        web.get_status()
     )
 
 
-    print(result)
+    print(
+
+        web.search(
+            "آخر أخبار الذكاء الاصطناعي"
+        )
+
+    )
