@@ -16,7 +16,6 @@ Features:
 import re
 
 
-
 class ToolRouter:
 
 
@@ -44,11 +43,9 @@ class ToolRouter:
         text
     ):
 
-
         if "```" not in text:
 
             return text.strip()
-
 
 
         parts = text.split("```")
@@ -59,19 +56,15 @@ class ToolRouter:
             return text.strip()
 
 
-
         code = parts[1].strip()
 
 
         lines = code.splitlines()
 
 
-
         if lines:
 
-
             language = lines[0].lower().strip()
-
 
 
             supported = [
@@ -96,7 +89,6 @@ class ToolRouter:
             ]
 
 
-
             if language in supported:
 
                 code = "\n".join(
@@ -104,9 +96,7 @@ class ToolRouter:
                 )
 
 
-
         return code.strip()
-
 
 
 
@@ -120,12 +110,9 @@ class ToolRouter:
         message
     ):
 
-
         text = message.lower()
 
 
-
-        # Code Block Priority
 
         if "```" in message:
 
@@ -133,8 +120,6 @@ class ToolRouter:
 
 
 
-
-        # Calculator
 
         if re.search(
             r"\d+\s*(\+|\-|\*|\/|ضرب|قسمة|جمع|طرح)\s*\d+",
@@ -145,8 +130,6 @@ class ToolRouter:
 
 
 
-
-        # Web Search
 
         search_words = [
 
@@ -171,8 +154,6 @@ class ToolRouter:
 
 
 
-
-        # Code Keywords
 
         code_words = [
 
@@ -216,25 +197,17 @@ class ToolRouter:
 
 
 
-        # Time
-
         if (
-
             "وقت" in text
-
             or "الساعة" in text
-
             or "time" in text
-
         ):
 
             return "current_time"
 
 
 
-
         return "model"
-
 
 
 
@@ -256,9 +229,6 @@ class ToolRouter:
 
 
 
-
-        # AI Model
-
         if tool == "model":
 
             return {
@@ -274,11 +244,7 @@ class ToolRouter:
 
 
 
-
-        # Code Agent
-
         if tool == "code_agent":
-
 
 
             if not self.code_agent:
@@ -298,7 +264,6 @@ class ToolRouter:
 
 
 
-
             code = self.extract_code(
                 message
             )
@@ -307,12 +272,10 @@ class ToolRouter:
 
             try:
 
-
                 result = self.code_agent.fix(
                     code,
                     self.engine
                 )
-
 
 
                 return {
@@ -330,9 +293,7 @@ class ToolRouter:
 
 
 
-
             except Exception as e:
-
 
                 return {
 
@@ -350,11 +311,6 @@ class ToolRouter:
 
 
 
-
-
-        # External Tools
-
-
         if (
 
             self.tools
@@ -368,13 +324,10 @@ class ToolRouter:
 
         ):
 
-
             return self.tools.run_tool(
                 tool,
                 message
             )
-
-
 
 
 
@@ -399,15 +352,12 @@ class ToolRouter:
 # Test
 # ====================================
 
-
 if __name__ == "__main__":
-
 
 
     router = ToolRouter(
         None
     )
-
 
 
     print(
@@ -417,7 +367,6 @@ if __name__ == "__main__":
     )
 
 
-
     print(
         router.choose_tool(
             "ابحث عن الذكاء الاصطناعي"
@@ -425,13 +374,11 @@ if __name__ == "__main__":
     )
 
 
-
     print(
         router.choose_tool(
             "اصلح هذا الكود"
         )
     )
-
 
 
     print(
