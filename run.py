@@ -1,7 +1,7 @@
 """
-NEURA-1 Main Startup
+NEURA-1 Main Startup v0.9
 
-Starts and initializes the NEURA-1 system.
+Starts and initializes the NEURA-1 AI system.
 """
 
 import os
@@ -26,61 +26,89 @@ def initialize_neura():
 
 
         print(
-            f"✅ Engine: {status.get('name','NEURA Engine')}"
+            f"✅ Engine: {status.get('name', 'NEURA Engine')}"
         )
 
-        print(
-            f"📌 Version: {status.get('version','unknown')}"
-        )
 
         print(
-            f"🤖 Model: {status.get('model','unknown')}"
+            f"📌 Version: {status.get('version', 'unknown')}"
+        )
+
+
+        print(
+            f"🤖 Model: {status.get('model', 'unknown')}"
+        )
+
+
+        print(
+            f"⚡ Inference Ready: {status.get('inference_ready', False)}"
         )
 
 
     except Exception as e:
 
+
         print(
-            "⚠️ Engine status unavailable:"
+            "⚠️ Engine status unavailable"
         )
 
-        print(e)
+        print(
+            str(e)
+        )
 
 
+    systems = [
 
-    print("📚 Knowledge system: Ready")
-    print("💬 Conversation system: Ready")
-    print("🧠 Memory system: Ready")
-    print("🛠️ Tools system: Ready")
-    print("🔎 Web Search system: Ready")
-    print("💻 Code Agent: Ready")
+        "📚 Knowledge system",
+        "💬 Conversation system",
+        "🧠 Memory system",
+        "🛠️ Tools system",
+        "🔎 Web Search system",
+        "💻 Code Agent"
+
+    ]
+
+
+    for system in systems:
+
+        print(
+            f"{system}: Ready"
+        )
 
 
 
 
 def print_banner():
 
-    print("""
-================================
 
-        NEURA-1 AI SYSTEM
+    print(
+"""
+====================================
 
-        Advanced AI Assistant
+        🧠 NEURA-1 AI SYSTEM
 
-================================
-""")
+        Arabic First AI Assistant
+
+        Version: 0.9
+
+====================================
+"""
+    )
 
 
 
 
 def main():
 
+
     print_banner()
 
 
     try:
 
+
         initialize_neura()
+
 
 
         host = os.getenv(
@@ -89,7 +117,6 @@ def main():
         )
 
 
-        # Railway injects PORT automatically
 
         port = int(
             os.getenv(
@@ -97,6 +124,7 @@ def main():
                 8080
             )
         )
+
 
 
         print(
@@ -117,6 +145,7 @@ def main():
         )
 
 
+
     except Exception:
 
 
@@ -126,6 +155,8 @@ def main():
 
 
         traceback.print_exc()
+
+
 
 
 
