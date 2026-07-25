@@ -1,12 +1,17 @@
 """
-NEURA-1 Hugging Face Inference Provider v0.9
+NEURA-1 Hugging Face Inference Provider v0.9.1
 
 Connects NEURA-1 with Hugging Face Router API.
+Supports:
+- Qwen/Qwen3.5-9B
+- Chat completion
+- History
+- Error handling
 """
 
 import os
+import time
 import requests
-
 
 
 class InferenceAPI:
@@ -16,6 +21,8 @@ class InferenceAPI:
         self,
         model_name=None
     ):
+
+        self.name = "NEURA Inference API"
 
 
         self.url = (
@@ -29,51 +36,58 @@ class InferenceAPI:
 
 
         self.model = (
-
             model_name
-
             or os.getenv(
                 "MODEL_NAME",
                 "Qwen/Qwen3.5-9B"
             )
-
         )
+
+
+        self.temperature = 0.7
+
+        self.max_tokens = 512
+
 
 
         self.system_prompt = """
 You are NEURA-1.
 
-Arabic-first advanced AI assistant.
+Arabic-first advanced artificial intelligence system.
 
-Capabilities:
+Your capabilities:
+
 - Programming assistance
-- Code analysis and debugging
-- Web knowledge integration
+- Code debugging
 - Reasoning
 - Technical explanations
+- Knowledge retrieval
+- AI assistant tasks
 
 Rules:
-- Reply mainly in Arabic.
+
+- Answer mainly in Arabic.
 - Be accurate.
 - Explain clearly.
+- Do not hallucinate.
 """
 
 
 
     # =========================
-    # Generate
+    # Generate Response
     # =========================
+
 
     def generate(
         self,
         prompt,
         history=None,
-        max_tokens=512
+        max_tokens=None
     ):
 
 
         if not self.token:
-
 
             return {
 
@@ -84,12 +98,9 @@ Rules:
 
 
 
-
         messages = [
 
-
             {
-
                 "role":
                 "system",
 
@@ -98,9 +109,7 @@ Rules:
 
             }
 
-
         ]
-
 
 
 
@@ -112,21 +121,17 @@ Rules:
 
 
 
-
         messages.append(
 
             {
-
                 "role":
                 "user",
 
                 "content":
                 prompt
-
             }
 
         )
-
 
 
 
@@ -144,7 +149,6 @@ Rules:
 
 
 
-
         payload = {
 
 
@@ -157,11 +161,12 @@ Rules:
 
 
             "max_tokens":
-            max_tokens,
+            max_tokens
+            or self.max_tokens,
 
 
             "temperature":
-            0.7,
+            self.temperature,
 
 
             "top_p":
@@ -171,90 +176,143 @@ Rules:
 
 
 
-
-
-        try:
-
-
-            response = requests.post(
-
-                self.url,
-
-                headers=headers,
-
-                json=payload,
-
-                timeout=60
-
-            )
+        retries = 3
 
 
 
-            result = response.json()
+        for attempt in range(retries):
+
+            try:
+
+
+                response = requests.post(
+
+                    self.url,
+
+                    headers=headers,
+
+                    json=payload,
+
+                    timeout=60
+
+                )
 
 
 
-            if response.status_code != 200:
+                data = response.json()
+
+
+
+                if response.status_code != 200:
+
+
+                    return {
+
+                        "error":
+                        data,
+
+                        "status":
+                        response.status_code,
+
+                        "model":
+                        self.model
+
+                    }
+
+
+
+
+                choices = data.get(
+                    "choices"
+                )
+
+
+
+                if choices:
+
+
+                    return (
+                        choices[0]
+                        .get("message", {})
+                        .get(
+                            "content",
+                            ""
+                        )
+                    )
+
 
 
                 return {
 
-
                     "error":
-                    result,
-
-
-                    "model":
-                    self.model,
-
-
-                    "status_code":
-                    response.status_code
+                    "Empty response"
 
                 }
 
 
 
 
-            return (
-
-                result
-                .get("choices", [{}])[0]
-                .get("message", {})
-                .get(
-                    "content",
-                    "No response"
-                )
-
-            )
+            except requests.exceptions.Timeout:
 
 
+                if attempt < retries - 1:
+
+                    time.sleep(2)
+
+                    continue
 
 
+                return {
 
-        except requests.exceptions.Timeout:
+                    "error":
+                    "Request timeout"
 
-
-            return {
-
-                "error":
-                "Request timeout"
-
-            }
+                }
 
 
 
+            except Exception as e:
 
 
-        except Exception as e:
+                return {
+
+                    "error":
+                    str(e)
+
+                }
 
 
-            return {
 
-                "error":
-                str(e)
 
-            }
+
+    # =========================
+    # Status
+    # =========================
+
+
+    def get_status(self):
+
+
+        return {
+
+
+            "provider":
+            "Hugging Face Router",
+
+
+            "model":
+            self.model,
+
+
+            "connected":
+            bool(self.token),
+
+
+            "api":
+            self.url
+
+        }
+
 
 
 
@@ -263,6 +321,7 @@ Rules:
 # Test
 # =========================
 
+
 if __name__ == "__main__":
 
 
@@ -270,7 +329,12 @@ if __name__ == "__main__":
 
 
     print(
+        ai.get_status()
+    )
+
+
+    print(
         ai.generate(
-            "مرحبا نيرا"
+            "مرحبا نيرا، عرف نفسك"
         )
     )
