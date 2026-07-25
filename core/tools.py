@@ -1,8 +1,8 @@
 """
-NEURA-1 Tools System v0.6.1
+NEURA-1 Tools System v0.7
 
 Manages external capabilities and actions
-for the NEURA-1 assistant.
+for NEURA-1 AI assistant.
 """
 
 
@@ -10,7 +10,9 @@ import ast
 import operator
 import os
 import platform
-from datetime import datetime
+import json
+
+from datetime import datetime, timezone
 
 
 from core.web_search import WebSearch
@@ -18,63 +20,113 @@ from core.code_agent import CodeAgent
 
 
 
+
 class ToolsSystem:
 
 
-    def __init__(self):
+
+    def __init__(
+        self,
+        engine=None
+    ):
+
+
+        self.version = "0.7.0"
+
+        self.engine = engine
+
 
         self.web = WebSearch()
 
         self.code = CodeAgent()
 
 
+
         self.tools = {
+
 
             "calculator":
                 self.calculator,
 
+
             "text_info":
                 self.text_info,
+
 
             "system_info":
                 self.system_info,
 
+
             "current_time":
                 self.current_time,
+
 
             "file_info":
                 self.file_info,
 
+
+            "directory_list":
+                self.directory_list,
+
+
             "memory_search":
                 self.memory_search,
+
 
             "knowledge_search":
                 self.knowledge_search,
 
+
             "translate":
                 self.translate,
+
+
+            "json_parser":
+                self.json_parser,
+
+
+            "env_info":
+                self.env_info,
+
 
             "web_search":
                 self.run_web_search,
 
+
             "code_agent":
                 self.code_fix,
+
 
             "code_analyze":
                 self.code_analyze,
 
+
             "code_fix":
-                self.code_fix
+                self.code_fix,
+
+
+            "code_explain":
+                self.code_explain
 
         }
 
 
 
-    def available_tools(self):
+
+    # =====================
+    # Tools Manager
+    # =====================
+
+
+    def available_tools(
+        self
+    ):
+
 
         return list(
             self.tools.keys()
         )
+
 
 
 
@@ -84,7 +136,10 @@ class ToolsSystem:
         data
     ):
 
-        tool = self.tools.get(tool_name)
+
+        tool = self.tools.get(
+            tool_name
+        )
 
 
         if not tool:
@@ -92,12 +147,27 @@ class ToolsSystem:
             return {
 
                 "error":
-                    "Tool not found"
+                "Tool not found"
 
             }
 
 
-        return tool(data)
+        try:
+
+            return tool(data)
+
+
+        except Exception as e:
+
+
+            return {
+
+                "error":
+                str(e)
+
+            }
+
+
 
 
 
@@ -111,7 +181,11 @@ class ToolsSystem:
         query
     ):
 
-        return self.web.search(query)
+
+        return self.web.search(
+            query
+        )
+
 
 
 
@@ -125,7 +199,11 @@ class ToolsSystem:
         code
     ):
 
-        return self.code.analyze(code)
+
+        return self.code.analyze(
+            code
+        )
+
 
 
 
@@ -134,7 +212,25 @@ class ToolsSystem:
         code
     ):
 
-        return self.code.fix(code)
+
+        return self.code.fix(
+            code,
+            self.engine
+        )
+
+
+
+
+    def code_explain(
+        self,
+        code
+    ):
+
+
+        return self.code.explain(
+            code
+        )
+
 
 
 
@@ -151,40 +247,59 @@ class ToolsSystem:
 
         try:
 
+
             replacements = {
 
-                "ضرب": "*",
-                "قسمة": "/",
-                "جمع": "+",
-                "طرح": "-"
+
+                "ضرب":
+                "*",
+
+
+                "قسمة":
+                "/",
+
+
+                "جمع":
+                "+",
+
+
+                "طرح":
+                "-"
 
             }
 
 
-            for key, value in replacements.items():
+
+            for k,v in replacements.items():
 
                 expression = expression.replace(
-                    key,
-                    value
+                    k,
+                    v
                 )
+
 
 
             allowed = {
 
+
                 ast.Add:
-                    operator.add,
+                operator.add,
+
 
                 ast.Sub:
-                    operator.sub,
+                operator.sub,
+
 
                 ast.Mult:
-                    operator.mul,
+                operator.mul,
+
 
                 ast.Div:
-                    operator.truediv,
+                operator.truediv,
+
 
                 ast.Pow:
-                    operator.pow
+                operator.pow
 
             }
 
@@ -197,7 +312,7 @@ class ToolsSystem:
 
 
 
-            def evaluate(node):
+            def calculate(node):
 
 
                 if isinstance(
@@ -207,7 +322,7 @@ class ToolsSystem:
 
                     if isinstance(
                         node.value,
-                        (int, float)
+                        (int,float)
                     ):
 
                         return node.value
@@ -227,29 +342,33 @@ class ToolsSystem:
                     if operation:
 
                         return operation(
-                            evaluate(node.left),
-                            evaluate(node.right)
+                            calculate(node.left),
+                            calculate(node.right)
                         )
 
 
+
                 raise ValueError(
-                    "Invalid expression"
+                    "Invalid calculation"
                 )
 
 
 
             return {
 
+
                 "tool":
-                    "calculator",
+                "calculator",
+
 
                 "expression":
-                    expression,
+                expression,
+
 
                 "result":
-                    evaluate(
-                        tree.body
-                    )
+                calculate(
+                    tree.body
+                )
 
             }
 
@@ -260,19 +379,22 @@ class ToolsSystem:
 
             return {
 
+
                 "tool":
-                    "calculator",
+                "calculator",
+
 
                 "error":
-                    str(e)
+                str(e)
 
             }
 
 
 
 
+
     # =====================
-    # Text Analysis
+    # Text
     # =====================
 
 
@@ -284,29 +406,28 @@ class ToolsSystem:
 
         return {
 
+
             "characters":
-                len(text),
+            len(text),
+
 
             "words":
-                len(text.split()),
+            len(text.split()),
 
-            "language":
 
-                "Arabic"
-
-                if any(
-                    "\u0600" <= c <= "\u06FF"
-                    for c in text
-                )
-
-                else "English"
+            "has_arabic":
+            any(
+                "\u0600" <= c <= "\u06FF"
+                for c in text
+            )
 
         }
 
 
 
+
     # =====================
-    # System Info
+    # System
     # =====================
 
 
@@ -318,23 +439,28 @@ class ToolsSystem:
 
         return {
 
-            "system":
-                "NEURA-1",
+
+            "name":
+            "NEURA-1",
+
 
             "version":
-                "0.6.1",
+            self.version,
+
 
             "model":
-                os.getenv(
-                    "MODEL_NAME",
-                    "Qwen/Qwen3.5-9B"
-                ),
+            os.getenv(
+                "MODEL_NAME",
+                "Qwen/Qwen3.5-9B"
+            ),
+
 
             "platform":
-                platform.system(),
+            platform.platform(),
+
 
             "status":
-                "online"
+            "online"
 
         }
 
@@ -354,14 +480,19 @@ class ToolsSystem:
 
         return {
 
+
             "time":
-                datetime.utcnow()
-                .isoformat(),
+            datetime.now(
+                timezone.utc
+            ).isoformat(),
+
 
             "timezone":
-                "UTC"
+            "UTC"
 
         }
+
+
 
 
 
@@ -376,41 +507,73 @@ class ToolsSystem:
     ):
 
 
-        try:
+        if not os.path.exists(path):
 
-            exists = os.path.exists(path)
+            return {
+
+                "exists":
+                False
+
+            }
+
+
+        return {
+
+
+            "path":
+            path,
+
+
+            "exists":
+            True,
+
+
+            "size":
+            os.path.getsize(path)
+
+        }
+
+
+
+
+    def directory_list(
+        self,
+        path="."
+    ):
+
+
+        try:
 
 
             return {
 
+
                 "path":
-                    path,
+                path,
 
-                "exists":
-                    exists,
 
-                "size":
-                    os.path.getsize(path)
-                    if exists
-                    else 0
+                "files":
+                os.listdir(path)
 
             }
 
 
         except Exception as e:
 
+
             return {
 
                 "error":
-                    str(e)
+                str(e)
 
             }
 
 
 
 
+
     # =====================
-    # Memory
+    # Memory / Knowledge
     # =====================
 
 
@@ -419,24 +582,20 @@ class ToolsSystem:
         query
     ):
 
+
         return {
 
+
             "tool":
-                "memory_search",
+            "memory_search",
+
 
             "query":
-                query,
-
-            "status":
-                "connected"
+            query
 
         }
 
 
-
-    # =====================
-    # Knowledge
-    # =====================
 
 
     def knowledge_search(
@@ -444,18 +603,83 @@ class ToolsSystem:
         query
     ):
 
+
         return {
 
+
             "tool":
-                "knowledge_search",
+            "knowledge_search",
+
 
             "query":
-                query,
-
-            "status":
-                "connected"
+            query
 
         }
+
+
+
+
+
+    # =====================
+    # JSON
+    # =====================
+
+
+    def json_parser(
+        self,
+        data
+    ):
+
+
+        try:
+
+
+            return json.loads(
+                data
+            )
+
+
+        except Exception as e:
+
+
+            return {
+
+                "error":
+                str(e)
+
+            }
+
+
+
+
+    # =====================
+    # ENV
+    # =====================
+
+
+    def env_info(
+        self,
+        _
+    ):
+
+
+        return {
+
+
+            "HF_TOKEN":
+            bool(
+                os.getenv("HF_TOKEN")
+            ),
+
+
+            "MODEL":
+            os.getenv(
+                "MODEL_NAME",
+                "Qwen/Qwen3.5-9B"
+            )
+
+        }
+
 
 
 
@@ -470,15 +694,19 @@ class ToolsSystem:
         text
     ):
 
+
         return {
 
+
             "input":
-                text,
+            text,
+
 
             "status":
-                "translation engine pending"
+            "AI translation pending"
 
         }
+
 
 
 
