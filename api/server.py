@@ -11,12 +11,14 @@ Features:
 - Health Check
 """
 
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 from core.config import Config
 from core.neura_core import NEURACore
 from core.auth import AuthSystem
+
 
 
 # =========================
@@ -26,6 +28,7 @@ from core.auth import AuthSystem
 app = Flask(__name__)
 
 CORS(app)
+
 
 
 # =========================
@@ -41,6 +44,7 @@ try:
 
     auth = AuthSystem()
 
+
     print(
         "✅ NEURA Core initialized"
     )
@@ -54,8 +58,11 @@ except Exception as e:
 
     print(e)
 
+
     neura = None
     auth = None
+
+
 
 
 
@@ -63,32 +70,29 @@ except Exception as e:
 # Home
 # =========================
 
-
 @app.route("/", methods=["GET"])
 def home():
 
     return jsonify({
 
-        "name":
-        "NEURA-1",
+        "name": "NEURA-1",
 
-        "status":
-        "online",
+        "status": "online",
 
-        "version":
-        "0.9.0",
+        "version": "0.9.0",
 
         "description":
-        "Arabic-first AI Cloud System",
+        "Arabic-first AI Cloud System"
 
     })
+
+
 
 
 
 # =========================
 # Status
 # =========================
-
 
 @app.route(
     "/api/status",
@@ -103,7 +107,8 @@ def status():
             "status":
             "failed"
 
-        }),500
+        }), 500
+
 
 
     return jsonify(
@@ -114,10 +119,11 @@ def status():
 
 
 
+
+
 # =========================
 # Health
 # =========================
-
 
 @app.route(
     "/api/health",
@@ -143,10 +149,11 @@ def health():
 
 
 
+
+
 # =========================
 # Create User
 # =========================
-
 
 @app.route(
     "/api/user/create",
@@ -175,7 +182,7 @@ def create_user():
             "error":
             "user_id required"
 
-        }),400
+        }), 400
 
 
 
@@ -190,10 +197,11 @@ def create_user():
 
 
 
+
+
 # =========================
 # Chat
 # =========================
-
 
 @app.route(
     "/api/chat",
@@ -210,7 +218,7 @@ def chat():
                 "error":
                 "NEURA unavailable"
 
-            }),500
+            }), 500
 
 
 
@@ -236,7 +244,7 @@ def chat():
                 "error":
                 "message required"
 
-            }),400
+            }), 400
 
 
 
@@ -255,20 +263,20 @@ def chat():
 
     except Exception as e:
 
-
         return jsonify({
 
             "error":
             str(e)
 
-        }),500
+        }), 500
+
+
 
 
 
 # =========================
 # Code Agent
 # =========================
-
 
 @app.route(
     "/api/code",
@@ -285,7 +293,7 @@ def code():
                 "error":
                 "NEURA unavailable"
 
-            }),500
+            }), 500
 
 
 
@@ -311,7 +319,7 @@ def code():
                 "error":
                 "code required"
 
-            }),400
+            }), 400
 
 
 
@@ -323,8 +331,11 @@ def code():
 
 
             result = agent.fix(
+
                 source,
+
                 neura.engine
+
             )
 
 
@@ -332,7 +343,9 @@ def code():
 
 
             result = agent.analyze(
+
                 source
+
             )
 
 
@@ -340,7 +353,9 @@ def code():
 
 
             result = agent.explain(
+
                 source
+
             )
 
 
@@ -368,15 +383,15 @@ def code():
             "error":
             str(e)
 
-        }),500
+        }), 500
+
 
 
 
 
 # =========================
-# Run
+# Run Server
 # =========================
-
 
 if __name__ == "__main__":
 
