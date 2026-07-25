@@ -1,5 +1,5 @@
 """
-NEURA-1 Hugging Face Inference Provider
+NEURA-1 Hugging Face Inference Provider v0.9
 
 Connects NEURA-1 with Hugging Face Router API.
 """
@@ -12,7 +12,10 @@ import requests
 class InferenceAPI:
 
 
-    def __init__(self):
+    def __init__(
+        self,
+        model_name=None
+    ):
 
 
         self.url = (
@@ -25,9 +28,15 @@ class InferenceAPI:
         )
 
 
-        self.model = os.getenv(
-            "MODEL_NAME",
-            "Qwen/Qwen3.5-9B"
+        self.model = (
+
+            model_name
+
+            or os.getenv(
+                "MODEL_NAME",
+                "Qwen/Qwen3.5-9B"
+            )
+
         )
 
 
@@ -51,6 +60,10 @@ Rules:
 
 
 
+    # =========================
+    # Generate
+    # =========================
+
     def generate(
         self,
         prompt,
@@ -61,29 +74,37 @@ Rules:
 
         if not self.token:
 
+
             return {
+
                 "error":
-                    "HF_TOKEN missing"
+                "HF_TOKEN missing"
+
             }
+
 
 
 
         messages = [
 
+
             {
+
                 "role":
-                    "system",
+                "system",
 
                 "content":
-                    self.system_prompt
+                self.system_prompt
+
             }
+
 
         ]
 
 
 
-        if history:
 
+        if history:
 
             messages.extend(
                 history
@@ -91,17 +112,21 @@ Rules:
 
 
 
+
         messages.append(
 
             {
+
                 "role":
-                    "user",
+                "user",
 
                 "content":
-                    prompt
+                prompt
+
             }
 
         )
+
 
 
 
@@ -109,13 +134,14 @@ Rules:
 
 
             "Authorization":
-                f"Bearer {self.token}",
+            f"Bearer {self.token}",
 
 
             "Content-Type":
-                "application/json"
+            "application/json"
 
         }
+
 
 
 
@@ -123,25 +149,27 @@ Rules:
 
 
             "model":
-                self.model,
+            self.model,
 
 
             "messages":
-                messages,
+            messages,
 
 
             "max_tokens":
-                max_tokens,
+            max_tokens,
 
 
             "temperature":
-                0.7,
+            0.7,
 
 
             "top_p":
-                0.9
+            0.9
 
         }
+
+
 
 
 
@@ -168,35 +196,39 @@ Rules:
 
             if response.status_code != 200:
 
+
                 return {
 
+
                     "error":
-                        result,
+                    result,
+
+
+                    "model":
+                    self.model,
+
 
                     "status_code":
-                        response.status_code
+                    response.status_code
 
                 }
 
 
 
-            if "choices" in result:
 
+            return (
 
-                return (
-                    result["choices"][0]
-                    ["message"]
-                    ["content"]
+                result
+                .get("choices", [{}])[0]
+                .get("message", {})
+                .get(
+                    "content",
+                    "No response"
                 )
 
+            )
 
 
-            return {
-
-                "error":
-                    result
-
-            }
 
 
 
@@ -206,9 +238,11 @@ Rules:
             return {
 
                 "error":
-                    "Request timeout"
+                "Request timeout"
 
             }
+
+
 
 
 
@@ -218,12 +252,16 @@ Rules:
             return {
 
                 "error":
-                    str(e)
+                str(e)
 
             }
 
 
 
+
+# =========================
+# Test
+# =========================
 
 if __name__ == "__main__":
 
