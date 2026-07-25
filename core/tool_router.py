@@ -12,12 +12,10 @@ Features:
 - Code extraction
 """
 
-
 import re
 
 
 class ToolRouter:
-
 
     def __init__(
         self,
@@ -27,11 +25,8 @@ class ToolRouter:
     ):
 
         self.tools = tools
-
         self.code_agent = code_agent
-
         self.engine = engine
-
 
 
     # ====================================
@@ -44,31 +39,22 @@ class ToolRouter:
     ):
 
         if "```" not in text:
-
             return text.strip()
-
 
         parts = text.split("```")
 
-
         if len(parts) < 2:
-
             return text.strip()
-
 
         code = parts[1].strip()
 
-
         lines = code.splitlines()
-
 
         if lines:
 
             language = lines[0].lower().strip()
 
-
             supported = [
-
                 "python",
                 "py",
                 "javascript",
@@ -85,20 +71,12 @@ class ToolRouter:
                 "html",
                 "css",
                 "sql"
-
             ]
 
-
             if language in supported:
-
-                code = "\n".join(
-                    lines[1:]
-                )
-
+                code = "\n".join(lines[1:])
 
         return code.strip()
-
-
 
 
     # ====================================
@@ -113,26 +91,18 @@ class ToolRouter:
         text = message.lower()
 
 
-
         if "```" in message:
-
             return "code_agent"
-
-
 
 
         if re.search(
             r"\d+\s*(\+|\-|\*|\/|ضرب|قسمة|جمع|طرح)\s*\d+",
             text
         ):
-
             return "calculator"
 
 
-
-
         search_words = [
-
             "ابحث",
             "بحث",
             "اخبار",
@@ -141,7 +111,6 @@ class ToolRouter:
             "latest",
             "search",
             "news"
-
         ]
 
 
@@ -149,14 +118,10 @@ class ToolRouter:
             word.lower() in text
             for word in search_words
         ):
-
             return "web_search"
 
 
-
-
         code_words = [
-
             "كود",
             "برمجة",
             "python",
@@ -182,19 +147,14 @@ class ToolRouter:
             "صلح",
             "عدل",
             "تصحيح"
-
         ]
-
 
 
         if any(
             word.lower() in text
             for word in code_words
         ):
-
             return "code_agent"
-
-
 
 
         if (
@@ -202,14 +162,10 @@ class ToolRouter:
             or "الساعة" in text
             or "time" in text
         ):
-
             return "current_time"
 
 
-
         return "model"
-
-
 
 
 
@@ -222,52 +178,30 @@ class ToolRouter:
         message
     ):
 
-
-        tool = self.choose_tool(
-            message
-        )
-
+        tool = self.choose_tool(message)
 
 
         if tool == "model":
 
             return {
-
-                "tool":
-                "model",
-
-                "action":
-                "send_to_ai"
-
+                "tool": "model",
+                "action": "send_to_ai"
             }
-
 
 
 
         if tool == "code_agent":
 
-
             if not self.code_agent:
 
                 return {
-
-                    "tool":
-                    "code_agent",
-
-                    "status":
-                    "unavailable",
-
-                    "error":
-                    "Code agent missing"
-
+                    "tool": "code_agent",
+                    "status": "unavailable",
+                    "error": "Code agent missing"
                 }
 
 
-
-            code = self.extract_code(
-                message
-            )
-
+            code = self.extract_code(message)
 
 
             try:
@@ -277,51 +211,27 @@ class ToolRouter:
                     self.engine
                 )
 
-
                 return {
-
-                    "tool":
-                    "code_agent",
-
-                    "status":
-                    "success",
-
-                    "result":
-                    result
-
+                    "tool": "code_agent",
+                    "status": "success",
+                    "result": result
                 }
-
 
 
             except Exception as e:
 
                 return {
-
-                    "tool":
-                    "code_agent",
-
-                    "status":
-                    "failed",
-
-                    "error":
-                    str(e)
-
+                    "tool": "code_agent",
+                    "status": "failed",
+                    "error": str(e)
                 }
 
 
 
-
         if (
-
             self.tools
-
-            and hasattr(
-                self.tools,
-                "tools"
-            )
-
+            and hasattr(self.tools, "tools")
             and tool in self.tools.tools
-
         ):
 
             return self.tools.run_tool(
@@ -330,21 +240,11 @@ class ToolRouter:
             )
 
 
-
         return {
-
-            "tool":
-            tool,
-
-            "status":
-            "unavailable",
-
-            "error":
-            f"Tool '{tool}' unavailable"
-
+            "tool": tool,
+            "status": "unavailable",
+            "error": f"Tool '{tool}' unavailable"
         }
-
-
 
 
 
@@ -354,10 +254,7 @@ class ToolRouter:
 
 if __name__ == "__main__":
 
-
-    router = ToolRouter(
-        None
-    )
+    router = ToolRouter(None)
 
 
     print(
@@ -381,9 +278,14 @@ if __name__ == "__main__":
     )
 
 
-    print(
-        router.extract_code(
-            """
-```python
+    sample_code = """
 def hello():
     print("Hi")
+"""
+
+
+    print(
+        router.extract_code(
+            sample_code
+        )
+    )
