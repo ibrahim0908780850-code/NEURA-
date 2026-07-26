@@ -1,12 +1,7 @@
 """
-NEURA-1 Hugging Face Inference Provider v0.9.1
+NEURA-1 Hugging Face Inference Provider v0.9.2
 
 Connects NEURA-1 with Hugging Face Router API.
-Supports:
-- Qwen/Qwen3.5-9B
-- Chat completion
-- History
-- Error handling
 """
 
 import os
@@ -16,7 +11,6 @@ import requests
 
 class InferenceAPI:
 
-
     def __init__(
         self,
         model_name=None
@@ -24,52 +18,43 @@ class InferenceAPI:
 
         self.name = "NEURA Inference API"
 
-
         self.url = (
             "https://router.huggingface.co/v1/chat/completions"
         )
-
 
         self.token = os.getenv(
             "HF_TOKEN"
         )
 
-
         self.model = (
             model_name
             or os.getenv(
                 "MODEL_NAME",
-                "Qwen/Qwen3.5-9B"
+                "Qwen/Qwen2.5-7B-Instruct"
             )
         )
-
 
         self.temperature = 0.7
 
         self.max_tokens = 512
 
 
-
         self.system_prompt = """
 You are NEURA-1.
 
-Arabic-first advanced artificial intelligence system.
+Arabic-first advanced AI assistant.
 
-Your capabilities:
-
+Capabilities:
 - Programming assistance
 - Code debugging
 - Reasoning
 - Technical explanations
 - Knowledge retrieval
-- AI assistant tasks
 
 Rules:
-
 - Answer mainly in Arabic.
 - Be accurate.
 - Explain clearly.
-- Do not hallucinate.
 """
 
 
@@ -77,7 +62,6 @@ Rules:
     # =========================
     # Generate Response
     # =========================
-
 
     def generate(
         self,
@@ -90,10 +74,7 @@ Rules:
         if not self.token:
 
             return {
-
-                "error":
-                "HF_TOKEN missing"
-
+                "error": "HF_TOKEN missing"
             }
 
 
@@ -101,12 +82,8 @@ Rules:
         messages = [
 
             {
-                "role":
-                "system",
-
-                "content":
-                self.system_prompt
-
+                "role": "system",
+                "content": self.system_prompt
             }
 
         ]
@@ -124,11 +101,8 @@ Rules:
         messages.append(
 
             {
-                "role":
-                "user",
-
-                "content":
-                prompt
+                "role": "user",
+                "content": prompt
             }
 
         )
@@ -137,10 +111,8 @@ Rules:
 
         headers = {
 
-
             "Authorization":
             f"Bearer {self.token}",
-
 
             "Content-Type":
             "application/json"
@@ -151,23 +123,17 @@ Rules:
 
         payload = {
 
-
             "model":
             self.model,
-
 
             "messages":
             messages,
 
-
             "max_tokens":
-            max_tokens
-            or self.max_tokens,
-
+            max_tokens or self.max_tokens,
 
             "temperature":
             self.temperature,
-
 
             "top_p":
             0.9
@@ -176,14 +142,9 @@ Rules:
 
 
 
-        retries = 3
-
-
-
-        for attempt in range(retries):
+        for attempt in range(3):
 
             try:
-
 
                 response = requests.post(
 
@@ -198,18 +159,21 @@ Rules:
                 )
 
 
-
                 data = response.json()
+
+
+                print(
+                    "HF RESPONSE:",
+                    data
+                )
 
 
 
                 if response.status_code != 200:
 
-
                     return {
 
-                        "error":
-                        data,
+                        "error": data,
 
                         "status":
                         response.status_code,
@@ -221,7 +185,6 @@ Rules:
 
 
 
-
                 choices = data.get(
                     "choices"
                 )
@@ -230,32 +193,54 @@ Rules:
 
                 if choices:
 
+                    content = (
 
-                    return (
                         choices[0]
-                        .get("message", {})
                         .get(
-                            "content",
-                            ""
+                            "message",
+                            {}
                         )
+                        .get(
+                            "content"
+                        )
+
                     )
+
+
+                    if content:
+
+                        return content
+
+
+
+                    return {
+
+                        "error":
+                        "Empty model content",
+
+                        "raw":
+                        data
+
+                    }
 
 
 
                 return {
 
                     "error":
-                    "Empty response"
+                    "No choices returned",
+
+                    "raw":
+                    data
 
                 }
-
 
 
 
             except requests.exceptions.Timeout:
 
 
-                if attempt < retries - 1:
+                if attempt < 2:
 
                     time.sleep(2)
 
@@ -284,29 +269,24 @@ Rules:
 
 
 
-
     # =========================
     # Status
     # =========================
 
-
-    def get_status(self):
-
+    def get_status(
+        self
+    ):
 
         return {
-
 
             "provider":
             "Hugging Face Router",
 
-
             "model":
             self.model,
 
-
             "connected":
             bool(self.token),
-
 
             "api":
             self.url
@@ -314,12 +294,6 @@ Rules:
         }
 
 
-
-
-
-# =========================
-# Test
-# =========================
 
 
 if __name__ == "__main__":
