@@ -1,5 +1,5 @@
 """
-NEURA-1 Core Engine v0.9.2
+NEURA-1 Core Engine v0.9.3
 
 Main intelligence layer.
 
@@ -34,10 +34,12 @@ class NEURAEngine:
         self.config = Config()
 
         self.name = "NEURA-1"
-        self.version = "0.9.2"
+        self.version = "0.9.3"
 
 
+        # ======================
         # AI MODEL
+        # ======================
 
         self.model_loader = ModelLoader()
 
@@ -46,7 +48,9 @@ class NEURAEngine:
 
 
 
+        # ======================
         # CORE SYSTEMS
+        # ======================
 
         self.memory = MemorySystem()
 
@@ -54,13 +58,17 @@ class NEURAEngine:
 
 
 
+        # ======================
         # AGENTS
+        # ======================
 
         self.code_agent = CodeAgent()
 
 
 
+        # ======================
         # TOOLS
+        # ======================
 
         self.tools = ToolsSystem(
             engine=self
@@ -68,7 +76,9 @@ class NEURAEngine:
 
 
 
+        # ======================
         # ROUTER
+        # ======================
 
         self.router = ToolRouter(
             tools=self.tools,
@@ -114,7 +124,7 @@ Capabilities:
         if self.inference:
 
             return {
-                "status":"already_loaded",
+                "status": "already_loaded",
                 "model":
                 self.model_loader.model_name
             }
@@ -130,7 +140,7 @@ Capabilities:
 
 
             return {
-                "status":"loaded",
+                "status": "loaded",
                 "model":
                 self.model_loader.model_name
             }
@@ -138,11 +148,88 @@ Capabilities:
 
         except Exception as e:
 
-
             return {
-                "status":"failed",
-                "error":str(e)
+                "status": "failed",
+                "error": str(e)
             }
+
+
+
+
+    # ======================
+    # RESPONSE CLEANER
+    # ======================
+
+
+    def clean_response(self, response):
+
+        if not response:
+            return "لم يتم إنشاء رد."
+
+
+        if isinstance(response, dict):
+
+            # OpenAI format
+
+            if "choices" in response:
+
+                try:
+
+                    content = (
+                        response["choices"][0]
+                        ["message"]
+                        .get("content", "")
+                    )
+
+                    if content:
+
+                        return content.strip()
+
+
+                except Exception:
+
+                    pass
+
+
+
+            if "response" in response:
+
+                return response["response"]
+
+
+
+            return str(response)
+
+
+
+        if isinstance(response, str):
+
+            text = response.strip()
+
+
+            # Remove hidden reasoning
+
+            if "Thinking Process:" in text:
+
+                text = text.split(
+                    "Thinking Process:"
+                )[0]
+
+
+            if "reasoning" in text.lower():
+
+                return (
+                    "أعتذر، حدثت مشكلة "
+                    "في معالجة الإجابة."
+                )
+
+
+            return text
+
+
+
+        return str(response)
+
 
 
 
@@ -175,64 +262,14 @@ Capabilities:
 
             result = self.inference.generate(
                 prompt,
-                history=history
+                history=history,
+                max_tokens=512
             )
 
 
-
-            # ======================
-            # RESPONSE CLEANER
-            # ======================
-
-
-            if isinstance(result, dict):
-
-
-                # OpenAI style response
-
-                if "choices" in result:
-
-
-                    message = (
-                        result["choices"][0]
-                        .get("message", {})
-                    )
-
-
-                    content = message.get(
-                        "content",
-                        ""
-                    )
-
-
-                    if content.strip():
-
-                        return content
-
-
-
-                    return (
-                        "أعتذر، لم أتمكن "
-                        "من إنشاء إجابة."
-                    )
-
-
-
-                # Already formatted
-
-                if "response" in result:
-
-                    return result["response"]
-
-
-
-            if isinstance(result, str):
-
-                return result
-
-
-
-            return str(result)
+            return self.clean_response(
+                result
+            )
 
 
 
@@ -240,8 +277,9 @@ Capabilities:
 
 
             return {
-                "error":str(e)
+                "error": str(e)
             }
+
 
 
 
@@ -281,38 +319,48 @@ Capabilities:
 
 
 
-        # TOOL ROUTER
+
+        # TOOLS
+
+        try:
+
+            tool_result = self.router.execute(
+                message
+            )
 
 
-        tool_result = self.router.execute(
-            message
-        )
+            if tool_result.get(
+                "tool"
+            ) != "model":
 
 
-        if tool_result.get("tool") != "model":
+                return {
+
+                    "response":
+                    tool_result,
+
+                    "user_id":
+                    user_id,
+
+                    "timestamp":
+                    timestamp
+                }
 
 
-            return {
+        except Exception:
 
-                "response":tool_result,
+            pass
 
-                "user_id":user_id,
-
-                "timestamp":timestamp
-
-            }
 
 
 
 
         # KNOWLEDGE
 
-
         context = ""
 
 
         try:
-
 
             results = self.knowledge.search(
                 message
@@ -321,17 +369,19 @@ Capabilities:
 
             if results:
 
-
                 context = "\n".join(
+
                     item["content"]
+
                     for item in results
+
                 )
 
 
         except Exception:
 
-
             pass
+
 
 
 
@@ -349,6 +399,7 @@ Capabilities:
 
 
 
+
         prompt = f"""
 
 You are NEURA-1.
@@ -361,7 +412,7 @@ Rules:
 - Answer mainly in Arabic.
 - Be accurate.
 - Explain clearly.
-- Never reveal internal reasoning.
+- Do not reveal internal reasoning.
 - Return only the final answer.
 
 
@@ -399,15 +450,17 @@ Assistant:
 
         return {
 
+            "response":
+            response,
 
-            "response":response,
+            "user_id":
+            user_id,
 
-            "user_id":user_id,
-
-            "timestamp":timestamp
-
+            "timestamp":
+            timestamp
 
         }
+
 
 
 
@@ -431,6 +484,7 @@ Assistant:
 
 
 
+
     # ======================
     # STATUS
     # ======================
@@ -441,10 +495,13 @@ Assistant:
 
         return {
 
+            "name":
+            self.name,
 
-            "name":self.name,
 
-            "version":self.version,
+            "version":
+            self.version,
+
 
             "model":
             self.model_loader.model_name,
@@ -458,26 +515,31 @@ Assistant:
             self.inference is not None,
 
 
-            "memory_ready":True,
+            "memory_ready":
+            True,
 
 
-            "knowledge_ready":True,
+            "knowledge_ready":
+            True,
 
 
             "tools":
             self.tools.available_tools(),
 
 
-            "router_ready":True,
+            "router_ready":
+            True,
 
 
-            "code_agent_ready":True,
+            "code_agent_ready":
+            True,
 
 
             "created":
             self.created.isoformat()
 
         }
+
 
 
 
@@ -492,12 +554,17 @@ Assistant:
 
         return {
 
+            "status":
+            "healthy",
 
-            "status":"healthy",
 
-            "name":self.name,
+            "name":
+            self.name,
 
-            "version":self.version,
+
+            "version":
+            self.version,
+
 
             "time":
             datetime.now(
