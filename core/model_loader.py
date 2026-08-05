@@ -1,7 +1,12 @@
 """
-NEURA-1 Model Loader v0.9.1
+NEURA-1 Model Loader v0.9.2
 
 Connects NEURA-1 with external AI inference providers.
+
+Features:
+- Model connection management
+- Safe response parsing
+- Empty content protection
 """
 
 from core.config import Config
@@ -20,24 +25,21 @@ class ModelLoader:
         model_name=None
     ):
 
-
         self.config = Config()
 
 
         self.model_name = (
-
             model_name
-
             or getattr(
                 self.config,
                 "model_name",
                 "Qwen/Qwen3.5-9B"
             )
-
         )
 
 
         self.model = None
+
 
         self.inference = InferenceAPI(
             model_name=self.model_name
@@ -48,24 +50,15 @@ class ModelLoader:
 
 
 
-
-
     # =========================
     # Load Model
     # =========================
 
-
     def load(self):
-
-        """
-        Initialize inference provider.
-        """
-
 
         if self.model is not None:
 
             return self.model
-
 
 
 
@@ -74,9 +67,7 @@ class ModelLoader:
         )
 
 
-
         try:
-
 
             self.model = self.inference
 
@@ -84,7 +75,6 @@ class ModelLoader:
 
 
             return self.model
-
 
 
 
@@ -100,13 +90,9 @@ class ModelLoader:
 
 
 
-
-
-
     # =========================
-    # Generate
+    # Safe Generate
     # =========================
-
 
     def generate(
         self,
@@ -122,18 +108,111 @@ class ModelLoader:
 
 
 
-        return self.model.generate(
-
-            prompt,
-
-            history=history,
-
-            max_tokens=max_tokens
-
-        )
+        try:
 
 
+            result = self.model.generate(
 
+                prompt,
+
+                history=history,
+
+                max_tokens=max_tokens
+
+            )
+
+
+
+            return self.parse_response(
+                result
+            )
+
+
+
+        except Exception as e:
+
+
+            return {
+
+                "response":
+                "حدث خطأ أثناء توليد الرد",
+
+                "error":
+                str(e)
+
+            }
+
+
+
+    # =========================
+    # Response Parser
+    # =========================
+
+    def parse_response(
+        self,
+        result
+    ):
+
+
+        # نص مباشر
+
+        if isinstance(result, str):
+
+            return result
+
+
+
+        # JSON Response
+
+        if isinstance(result, dict):
+
+
+            # OpenAI compatible
+
+            choices = result.get(
+                "choices"
+            )
+
+
+            if choices:
+
+
+                message = choices[0].get(
+                    "message",
+                    {}
+                )
+
+
+                content = message.get(
+                    "content"
+                )
+
+
+                if content and content.strip():
+
+                    return content
+
+
+
+                # حماية من كشف reasoning
+
+                return (
+                    "أهلاً بك! "
+                    "أنا NEURA-1، "
+                    "كيف يمكنني مساعدتك؟"
+                )
+
+
+
+            # Provider response
+
+            if result.get("response"):
+
+                return result["response"]
+
+
+
+        return str(result)
 
 
 
@@ -141,9 +220,7 @@ class ModelLoader:
     # Reload
     # =========================
 
-
     def reload(self):
-
 
         self.model = None
 
@@ -154,19 +231,13 @@ class ModelLoader:
 
 
 
-
-
-
     # =========================
     # Status
     # =========================
 
-
     def get_status(self):
 
-
         return {
-
 
             "model":
             self.model_name,
@@ -187,13 +258,9 @@ class ModelLoader:
 
 
 
-
-
-
 # =========================
 # Test
 # =========================
-
 
 if __name__ == "__main__":
 
