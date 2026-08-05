@@ -1,8 +1,16 @@
 """
-NEURA-1 Inference Engine
+NEURA-1 Inference Engine v0.9.3
 
 Uses Hugging Face Inference Providers API.
+
+Features:
+- Chat Completion
+- Arabic-first system prompt
+- History support
+- Response cleaning
+- Error handling
 """
+
 
 import os
 
@@ -10,7 +18,9 @@ from huggingface_hub import InferenceClient
 
 
 
+
 class InferenceEngine:
+
 
 
     def __init__(
@@ -21,12 +31,16 @@ class InferenceEngine:
 
 
         self.model_name = (
+
             model
+
             or os.getenv(
                 "MODEL_NAME",
                 "Qwen/Qwen3.5-9B"
             )
+
         )
+
 
 
         self.client = InferenceClient(
@@ -38,19 +52,80 @@ class InferenceEngine:
         )
 
 
+
         self.system_prompt = """
+
 You are NEURA-1.
 
 Arabic-first advanced AI assistant.
 
 Rules:
+
 - Answer mainly in Arabic.
+- Never reveal internal reasoning.
+- Return only the final answer.
 - Help with programming and debugging.
-- Explain concepts clearly.
-- Use tools when available.
+- Explain technical concepts clearly.
 - Be accurate and concise.
+
 """
 
+
+
+
+    # =========================
+    # CLEAN RESPONSE
+    # =========================
+
+
+    def clean_response(
+        self,
+        text
+    ):
+
+
+        if not text:
+
+            return (
+                "أعتذر، لم أتمكن "
+                "من إنشاء إجابة."
+            )
+
+
+
+        text = str(text).strip()
+
+
+
+        # Remove reasoning leakage
+
+        if "Thinking Process:" in text:
+
+            text = text.split(
+                "Thinking Process:"
+            )[0].strip()
+
+
+
+        if "reasoning" in text.lower():
+
+            return (
+                "أعتذر، حدث خطأ "
+                "في معالجة الإجابة."
+            )
+
+
+
+        return text
+
+
+
+
+
+
+    # =========================
+    # GENERATE
+    # =========================
 
 
     def generate(
@@ -61,26 +136,44 @@ Rules:
     ):
 
 
-        if not os.getenv("HF_TOKEN"):
+
+        token = os.getenv(
+            "HF_TOKEN"
+        )
+
+
+
+        if not token:
+
 
             return {
+
                 "error":
-                    "HF_TOKEN missing"
+                "HF_TOKEN missing"
+
             }
+
 
 
 
         messages = [
 
-
             {
-                "role": "system",
+
+                "role":
+                "system",
+
                 "content":
-                    self.system_prompt
+                self.system_prompt
+
             }
 
         ]
 
+
+
+
+        # Conversation history
 
 
         if history:
@@ -89,27 +182,42 @@ Rules:
             for item in history:
 
 
-                messages.append({
+                if (
 
-                    "role":
+                    "role" in item
+
+                    and
+
+                    "content" in item
+
+                ):
+
+
+                    messages.append({
+
+                        "role":
                         item["role"],
 
-                    "content":
+                        "content":
                         item["content"]
 
-                })
+                    })
+
+
 
 
 
         messages.append({
 
             "role":
-                "user",
+            "user",
 
             "content":
-                user_message
+            user_message
 
         })
+
+
 
 
 
@@ -117,31 +225,64 @@ Rules:
 
 
             response = (
+
                 self.client
-                .chat.completions
+
+                .chat
+
+                .completions
+
                 .create(
 
-                    model=self.model_name,
+                    model=
+                    self.model_name,
 
-                    messages=messages,
 
-                    max_tokens=max_tokens,
+                    messages=
+                    messages,
 
-                    temperature=0.7,
 
-                    top_p=0.9
+                    max_tokens=
+                    max_tokens,
+
+
+                    temperature=
+                    0.5,
+
+
+                    top_p=
+                    0.9
 
                 )
+
             )
 
 
 
-            return (
+
+
+            # OpenAI compatible response
+
+
+            content = (
+
                 response
+
                 .choices[0]
+
                 .message
+
                 .content
+
             )
+
+
+
+            return self.clean_response(
+                content
+            )
+
+
 
 
 
@@ -151,14 +292,50 @@ Rules:
             return {
 
                 "error":
-                    str(e),
+                str(e),
 
                 "model":
-                    self.model_name
+                self.model_name
 
             }
 
 
+
+
+
+    # =========================
+    # STATUS
+    # =========================
+
+
+    def status(self):
+
+
+        return {
+
+
+            "provider":
+            "HuggingFace Inference API",
+
+
+            "model":
+            self.model_name,
+
+
+            "ready":
+            bool(
+                os.getenv("HF_TOKEN")
+            )
+
+        }
+
+
+
+
+
+# =========================
+# TEST
+# =========================
 
 
 if __name__ == "__main__":
@@ -167,8 +344,11 @@ if __name__ == "__main__":
     ai = InferenceEngine()
 
 
+
     print(
+
         ai.generate(
             "مرحبا نيرا"
         )
+
     )
