@@ -1,19 +1,21 @@
 """
-NEURA-1 Cloud API Server v0.9
+NEURA-1 Cloud API Server v1.0
 
-Secure API Gateway for NEURA-1.
+Backend Gateway for NEURA-1 Frontend
 
 Features:
 - Chat API
 - Status API
-- Code Agent
-- User Management
 - Health Check
+- User Management
+- Code Agent
+- Frontend Integration
 """
 
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from datetime import datetime
 
 from core.config import Config
 from core.neura_core import NEURACore
@@ -27,12 +29,22 @@ from core.auth import AuthSystem
 
 app = Flask(__name__)
 
-CORS(app)
+
+# Frontend Access
+
+CORS(
+    app,
+    resources={
+        r"/api/*":{
+            "origins":"*"
+        }
+    }
+)
 
 
 
 # =========================
-# Core Systems
+# Core
 # =========================
 
 config = Config()
@@ -41,7 +53,6 @@ config = Config()
 try:
 
     neura = NEURACore()
-
     auth = AuthSystem()
 
 
@@ -53,11 +64,9 @@ try:
 except Exception as e:
 
     print(
-        "❌ NEURA initialization failed:"
+        "❌ NEURA initialization failed",
+        e
     )
-
-    print(e)
-
 
     neura = None
     auth = None
@@ -67,22 +76,25 @@ except Exception as e:
 
 
 # =========================
-# Home
+# API Root
 # =========================
 
-@app.route("/", methods=["GET"])
+@app.route("/")
 def home():
 
     return jsonify({
 
-        "name": "NEURA-1",
+        "name":"NEURA-1",
 
-        "status": "online",
+        "version":"1.0.0",
 
-        "version": "0.9.0",
+        "status":"online",
 
-        "description":
-        "Arabic-first AI Cloud System"
+        "message":
+        "Arabic-first AI Cloud System",
+
+        "time":
+        datetime.utcnow().isoformat()
 
     })
 
@@ -91,31 +103,36 @@ def home():
 
 
 # =========================
-# Status
+# System Status
 # =========================
 
 @app.route(
-    "/api/status",
-    methods=["GET"]
+"/api/status",
+methods=["GET"]
 )
 def status():
+
 
     if not neura:
 
         return jsonify({
 
-            "status":
-            "failed"
+            "status":"offline"
 
-        }), 500
-
+        }),500
 
 
-    return jsonify(
 
+    return jsonify({
+
+        "status":"online",
+
+        "version":"1.0.0",
+
+        "engine":
         neura.engine.get_status()
 
-    )
+    })
 
 
 
@@ -126,50 +143,56 @@ def status():
 # =========================
 
 @app.route(
-    "/api/health",
-    methods=["GET"]
+"/api/health",
+methods=["GET"]
 )
 def health():
+
 
     if not neura:
 
         return jsonify({
 
-            "healthy":
-            False
+            "healthy":False
 
         })
 
 
-    return jsonify(
+    return jsonify({
 
-        neura.engine.health()
+        "healthy":True,
 
-    )
+        "service":"NEURA-1",
+
+        "time":
+        datetime.utcnow().isoformat()
+
+    })
 
 
 
 
 
 # =========================
-# Create User
+# User Create
 # =========================
 
 @app.route(
-    "/api/user/create",
-    methods=["POST"]
+"/api/user/create",
+methods=["POST"]
 )
 def create_user():
 
-    data = request.json or {}
+
+    data=request.json or {}
 
 
-    user_id = data.get(
+    user_id=data.get(
         "user_id"
     )
 
 
-    name = data.get(
+    name=data.get(
         "name",
         "User"
     )
@@ -182,7 +205,7 @@ def create_user():
             "error":
             "user_id required"
 
-        }), 400
+        }),400
 
 
 
@@ -204,8 +227,8 @@ def create_user():
 # =========================
 
 @app.route(
-    "/api/chat",
-    methods=["POST"]
+"/api/chat",
+methods=["POST"]
 )
 def chat():
 
@@ -218,22 +241,22 @@ def chat():
                 "error":
                 "NEURA unavailable"
 
-            }), 500
+            }),500
 
 
 
-        data = request.json or {}
+        data=request.json or {}
 
 
-        user_id = data.get(
-            "user_id",
-            "guest"
+        message=data.get(
+            "message",
+            ""
         )
 
 
-        message = data.get(
-            "message",
-            ""
+        user_id=data.get(
+            "user_id",
+            "guest"
         )
 
 
@@ -244,11 +267,11 @@ def chat():
                 "error":
                 "message required"
 
-            }), 400
+            }),400
 
 
 
-        result = neura.chat(
+        result=neura.chat(
 
             user_id,
 
@@ -257,18 +280,30 @@ def chat():
         )
 
 
-        return jsonify(result)
+        return jsonify({
+
+            "success":True,
+
+            "response":result,
+
+            "time":
+            datetime.utcnow().isoformat()
+
+        })
 
 
 
     except Exception as e:
 
+
         return jsonify({
+
+            "success":False,
 
             "error":
             str(e)
 
-        }), 500
+        }),500
 
 
 
@@ -279,34 +314,25 @@ def chat():
 # =========================
 
 @app.route(
-    "/api/code",
-    methods=["POST"]
+"/api/code",
+methods=["POST"]
 )
 def code():
 
+
     try:
 
-        if not neura:
 
-            return jsonify({
-
-                "error":
-                "NEURA unavailable"
-
-            }), 500
+        data=request.json or {}
 
 
-
-        data = request.json or {}
-
-
-        source = data.get(
+        source=data.get(
             "code",
             ""
         )
 
 
-        action = data.get(
+        action=data.get(
             "action",
             "analyze"
         )
@@ -319,60 +345,52 @@ def code():
                 "error":
                 "code required"
 
-            }), 400
+            }),400
 
 
 
-        agent = neura.engine.code_agent
+        agent=neura.engine.code_agent
 
 
 
-        if action == "fix":
+        if action=="fix":
 
-
-            result = agent.fix(
-
+            result=agent.fix(
                 source,
-
                 neura.engine
-
             )
 
 
-        elif action == "analyze":
+        elif action=="analyze":
 
-
-            result = agent.analyze(
-
+            result=agent.analyze(
                 source
-
             )
 
 
-        elif action == "explain":
+        elif action=="explain":
 
-
-            result = agent.explain(
-
+            result=agent.explain(
                 source
-
             )
 
 
         else:
 
-
-            result = {
-
+            result={
                 "error":
                 "unknown action"
-
             }
 
 
 
-        return jsonify(result)
+        return jsonify({
 
+            "success":True,
+
+            "result":result
+
+        })
 
 
     except Exception as e:
@@ -380,20 +398,22 @@ def code():
 
         return jsonify({
 
-            "error":
-            str(e)
+            "success":False,
 
-        }), 500
+            "error":str(e)
+
+        }),500
 
 
 
 
 
 # =========================
-# Run Server
+# Run
 # =========================
 
-if __name__ == "__main__":
+if __name__=="__main__":
+
 
     app.run(
 
